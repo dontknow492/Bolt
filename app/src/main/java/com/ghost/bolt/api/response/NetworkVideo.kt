@@ -1,0 +1,13 @@
+package com.ghost.bolt.api.response
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class NetworkVideo(
+    @SerialName("id") val id: String,
+    @SerialName("key") val key: String,
+    @SerialName("name") val name: String,
+    @SerialName("site") val site: String,
+    @SerialName("type") val type: String // "Trailer", "Teaser", "Featurette"
+)
