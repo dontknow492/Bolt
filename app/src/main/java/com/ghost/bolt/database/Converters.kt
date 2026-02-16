@@ -1,10 +1,13 @@
 package com.ghost.bolt.database
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.room.TypeConverter
 import com.ghost.bolt.enums.AppMediaType
 import com.ghost.bolt.enums.RefreshFrequency
 import com.ghost.bolt.enums.Season
 import com.ghost.bolt.enums.Status
+import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -97,5 +100,27 @@ class Converters {
     @TypeConverter
     fun refreshFrequencyToString(frequency: RefreshFrequency?): String? {
         return frequency?.name
+    }
+
+    @TypeConverter
+    fun colorToLong(color: Color?): Long? {
+        return try {
+            color?.toArgb()?.toLong()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to convert Color to Long")
+            null
+        }
+    }
+
+    @TypeConverter
+    fun longToColor(value: Long?): Color? {
+        return try {
+            value?.let {
+                Color(it.toInt())
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to convert Long to Color")
+            null
+        }
     }
 }

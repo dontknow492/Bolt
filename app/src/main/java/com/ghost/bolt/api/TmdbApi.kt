@@ -1,7 +1,9 @@
 package com.ghost.bolt.api
 
-import com.ghost.bolt.api.response.NetworkMovie
+import com.ghost.bolt.api.response.TMDbNetworkMedia
 import com.ghost.bolt.api.response.TmdbResponse
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -21,10 +23,11 @@ interface TmdbApi {
     @GET("trending/{media_type}/{time_window}")
     suspend fun getTrending(
         @Path("media_type") mediaType: String, // all, movie, tv, person
-        @Path("time_window") timeWindow: String, // day, week
+        @Path("time_window") timeWindow: String = "day", // day, week
         @Query("page") page: Int,
         @Query("language") language: String = "en-US"
     ): TmdbResponse
+
 
 
     @GET("discover/{media_type}")
@@ -46,14 +49,12 @@ interface TmdbApi {
         @Query("language") language: String = "en-US",
         @Query("append_to_response")
         appendToResponse: String = "credits,similar,videos,images"
-    ): NetworkMovie
+    ): TMDbNetworkMedia
 
     @GET("movie/{movie_id}")
     suspend fun getMovie(
         @Path("movie_id") movieId: Int,
         @Query("language") language: String = "en-US",
         @Query("append_to_response") appendToResponse: String = "credits,similar,videos,images"
-    ): NetworkMovie // This returns the full detail object
+    ): TMDbNetworkMedia // This returns the full detail object
 }
-
-

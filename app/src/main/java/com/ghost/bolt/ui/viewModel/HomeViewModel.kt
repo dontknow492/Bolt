@@ -17,10 +17,10 @@ import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
 data class HomeUiData(
-    val popularMovies: Flow<PagingData<MediaEntity>>,
-    val topRatedMovies: Flow<PagingData<MediaEntity>>,
-    val trendingMovies: Flow<PagingData<MediaEntity>>,
-    val upcomingMovies: Flow<PagingData<MediaEntity>>,
+    val popular: Flow<PagingData<MediaEntity>>,
+    val topRated: Flow<PagingData<MediaEntity>>,
+    val trending: Flow<PagingData<MediaEntity>>,
+    val upcoming: Flow<PagingData<MediaEntity>>,
 )
 
 sealed class HomeUiState {
@@ -36,31 +36,35 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
+    private var  mediaType: AppMediaType? = null
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     fun load(mediaType: AppMediaType) {
+        if (this.mediaType == mediaType && _uiState.value is HomeUiState.Success) return
+
         try {
             _uiState.update {
                 HomeUiState.Success(
                     HomeUiData(
-                        popularMovies = repository
+                        popular = repository
                             .getCategoryMediaList(AppCategory.POPULAR, mediaType)
                             .cachedIn(viewModelScope),
 
-                        topRatedMovies = repository
+                        topRated = repository
                             .getCategoryMediaList(AppCategory.TOP_RATED, mediaType)
                             .cachedIn(viewModelScope),
 
-                        trendingMovies = repository
+                        trending = repository
                             .getCategoryMediaList(AppCategory.TRENDING, mediaType)
                             .cachedIn(viewModelScope),
 
-                        upcomingMovies = repository
+                        upcoming = repository
                             .getCategoryMediaList(AppCategory.UPCOMING, mediaType)
                             .cachedIn(viewModelScope),
                     )
                 )
             }
+            this.mediaType = mediaType
         } catch (e: Exception) {
             _uiState.update { HomeUiState.Error(e.message ?: "Unknown error", e) }
         }

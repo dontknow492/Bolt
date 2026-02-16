@@ -74,7 +74,12 @@ class MediaRepository @Inject constructor(
                 Pager(
                     config = PagingConfig(
                         pageSize = 20,
-                        enablePlaceholders = true
+                        enablePlaceholders = true,
+                        // 2. Reduce initial load. We only need 1 page (20 items) to fill a horizontal row.
+                        initialLoadSize = 20,
+
+                        // 3. Lower prefetch distance.
+                        prefetchDistance = 5
                     ),
                     remoteMediator = TmdbRemoteMediator(
                         db = db,

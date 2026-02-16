@@ -83,6 +83,7 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+    implementation(libs.androidx.material.icons.core)
 
     //coil3
     implementation(libs.coil3)
@@ -121,6 +122,7 @@ dependencies {
 
     //retrofit2
     implementation(libs.retrofit.core)
+    implementation(libs.retrofit.converter.gson)
     implementation(libs.retrofit.kotlinx.json.convertor)
 //    implementation(libs.retrofit.k)
 

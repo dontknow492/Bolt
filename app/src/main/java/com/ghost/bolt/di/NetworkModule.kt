@@ -13,6 +13,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import timber.log.Timber
 
 
 @Module
@@ -27,6 +28,7 @@ class ApiModule {
             val originalRequest = chain.request()
             val originalUrl = originalRequest.url
 
+
             // Add api_key param to every URL: https://api.tmdb.org/...?api_key=XYZ
             val newUrl = originalUrl.newBuilder()
                 .addQueryParameter("api_key", apiKeyStore.apiKey)
@@ -35,6 +37,9 @@ class ApiModule {
             val newRequest = originalRequest.newBuilder()
                 .url(newUrl)
                 .build()
+
+            Timber.d("Sending request: ${originalUrl}")
+
 
             chain.proceed(newRequest)
         }
