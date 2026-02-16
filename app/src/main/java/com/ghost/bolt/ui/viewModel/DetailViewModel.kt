@@ -2,32 +2,25 @@ package com.ghost.bolt.ui.viewModel
 
 import android.content.Context
 import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ghost.bolt.database.entity.MediaDetail
-import com.ghost.bolt.enums.AppMediaType
 import com.ghost.bolt.repository.MediaRepository
 import com.ghost.bolt.ui.components.loadImageBitmapFromUrl
 import com.ghost.bolt.ui.theme.SeedColor
 import com.ghost.bolt.utils.ThemeColorCache
 import com.materialkolor.ktx.themeColor
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedFactory
-import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-sealed interface DetailUiState{
+sealed interface DetailUiState {
     object Loading : DetailUiState
     data class Error(val message: String, val throwable: Throwable?) : DetailUiState
     data class Success(val data: MediaDetail) : DetailUiState

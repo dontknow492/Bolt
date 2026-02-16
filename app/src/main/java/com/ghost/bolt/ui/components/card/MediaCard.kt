@@ -1,7 +1,15 @@
 package com.ghost.bolt.ui.components.card
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
@@ -50,6 +58,7 @@ fun SharedTransitionScope.MediaCard(
                     modifier = modifier
                 )
             }
+
             is MediaCardStyle.Cover -> {
                 // Passes the specific variant (Compact, Minimal, etc.) down
                 MediaCoverView(
@@ -62,6 +71,7 @@ fun SharedTransitionScope.MediaCard(
                     animatedVisibilityScope = animatedVisibilityScope
                 )
             }
+
             is MediaCardStyle.Detailed -> {
                 // Call the new Detailed view here!
                 MediaDetailedView(
@@ -93,10 +103,11 @@ private fun MediaCardPreview() {
     val samplePosterUrl = "https://image.tmdb.org/t/p/w500/sample_image.jpg"
     val sampleVoteAverage = 8.8f
     val sampleVoteCount = 2000
-    val sampleOverview = "A thief who steals corporate secrets through the use of dream-sharing technology."
+    val sampleOverview =
+        "A thief who steals corporate secrets through the use of dream-sharing technology."
     val sampleReleaseDate = "2010-07-16"
     val sampleMediaType = AppMediaType.MOVIE
-    val sampleStyle = MediaCardStyle.Detailed
+    MediaCardStyle.Detailed
 
     val styles = listOf(
         MediaCardStyle.Detailed,

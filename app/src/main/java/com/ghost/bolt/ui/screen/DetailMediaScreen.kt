@@ -1,15 +1,12 @@
 package com.ghost.bolt.ui.screen
 
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ghost.bolt.database.entity.TmdbImageSize
@@ -17,7 +14,6 @@ import com.ghost.bolt.database.entity.getPosterUrl
 import com.ghost.bolt.ui.components.DynamicThemeFromImage
 import com.ghost.bolt.ui.viewModel.DetailUiState
 import com.ghost.bolt.ui.viewModel.DetailViewModel
-import com.ghost.bolt.ui.viewModel.HomeUiState
 import timber.log.Timber
 
 @Composable
@@ -45,7 +41,7 @@ fun DetailedMediaScreen(
             DynamicThemeFromImage(
                 imageUrl = state.data.media.getPosterUrl(TmdbImageSize.W92),
             ) {
-                Button({}){
+                Button({}) {
                     Text("Success: ${MaterialTheme.colorScheme.primary}")
                 }
             }

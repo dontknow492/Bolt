@@ -17,7 +17,6 @@ import com.ghost.bolt.database.entity.cross_ref.MediaRecommendationCrossRef
 import com.ghost.bolt.database.entity.cross_ref.MediaSimilarCrossRef
 import com.ghost.bolt.database.entity.cross_ref.MediaSpokenLanguageCrossRef
 import com.ghost.bolt.utils.mapper.toMediaEntity
-import kotlin.collections.emptyList
 
 /**
  * Data class to hold the results of decomposing a NetworkMovie
@@ -52,14 +51,16 @@ fun TMDbNetworkMedia.toDecomposition(): MediaDecomposition {
     val genreCrossRefs = genres.map { MediaGenreCrossRef(mediaId, it.genreId) }
 
     // 2. Keywords
-    val keywords = this.keywords?.all?.map { KeywordEntity(keywordId = it.id, keywords = it.name) } ?: emptyList()
+    val keywords = this.keywords?.all?.map { KeywordEntity(keywordId = it.id, keywords = it.name) }
+        ?: emptyList()
     val keywordCrossRefs = keywords.map { MediaKeywordCrossRef(mediaId, it.keywordId) }
 
     // 3. Companies
     val companies = this.productionCompanies?.map {
         ProductionCompanyEntity(productionCompanyId = it.id, productionCompanies = it.name)
     } ?: emptyList()
-    val companyCrossRefs = companies.map { MediaProductionCompanyCrossRef(mediaId, it.productionCompanyId) }
+    val companyCrossRefs =
+        companies.map { MediaProductionCompanyCrossRef(mediaId, it.productionCompanyId) }
 
     // 4. Cast (Note: We use the hash of the ISO code if your Entity ID is Int)
     val castEntities = this.credits?.cast?.map { networkCast ->
@@ -85,13 +86,18 @@ fun TMDbNetworkMedia.toDecomposition(): MediaDecomposition {
     val languages = this.spokenLanguages?.map {
         SpokenLanguageEntity(spokenLanguageId = it.isoCode.hashCode(), spokenLanguages = it.name)
     } ?: emptyList()
-    val languageCrossRefs = languages.map { MediaSpokenLanguageCrossRef(mediaId, it.spokenLanguageId) }
+    val languageCrossRefs =
+        languages.map { MediaSpokenLanguageCrossRef(mediaId, it.spokenLanguageId) }
 
     // 6. Production Countries
     val countries = this.productionCountries?.map {
-        ProductionCountryEntity(productionCountryId = it.isoCode.hashCode(), productionCountries = it.name)
+        ProductionCountryEntity(
+            productionCountryId = it.isoCode.hashCode(),
+            productionCountries = it.name
+        )
     } ?: emptyList()
-    val countryCrossRefs = countries.map { MediaProductionCountryCrossRef(mediaId, it.productionCountryId) }
+    val countryCrossRefs =
+        countries.map { MediaProductionCountryCrossRef(mediaId, it.productionCountryId) }
 
     // 7. Recommendations
     val recommendedList = this.recommendations?.results?.map { it.toMediaEntity() } ?: emptyList()

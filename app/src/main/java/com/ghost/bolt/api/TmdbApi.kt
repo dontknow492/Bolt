@@ -2,8 +2,6 @@ package com.ghost.bolt.api
 
 import com.ghost.bolt.api.response.TMDbNetworkMedia
 import com.ghost.bolt.api.response.TmdbResponse
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -27,7 +25,6 @@ interface TmdbApi {
         @Query("page") page: Int,
         @Query("language") language: String = "en-US"
     ): TmdbResponse
-
 
 
     @GET("discover/{media_type}")

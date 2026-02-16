@@ -12,11 +12,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -46,7 +43,6 @@ object SearchKey : NavKey
 
 @Serializable
 data class DetailMediaKey(val mediaId: Int) : NavKey
-
 
 
 val navigationBarItem = listOf(
@@ -119,7 +115,7 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
     val onSelected: (NavKey) -> Unit = { key ->
         selected = key
 
-        if(key in backStack) {
+        if (key in backStack) {
             backStack.remove(key)
         }
         backStack.add(key)
@@ -152,7 +148,7 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                         delayMillis = 300 // Usually, you want the exit to start immediately
                     )
                 ) + fadeOut(animationSpec = tween(300))
-            ){
+            ) {
                 BoltNavigationBar(
                     items = navigationBarItem,
                     selected = selected,
@@ -198,7 +194,7 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                         }
                     }
 
-                    is DetailMediaKey ->{
+                    is DetailMediaKey -> {
                         NavEntry(key = key) {
                             DetailedMediaScreen(
                                 mediaId = key.mediaId

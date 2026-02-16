@@ -1,7 +1,5 @@
 package com.ghost.bolt.ui.screen
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionLayout
@@ -20,7 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Refresh
@@ -94,7 +91,11 @@ fun HomeScreen(
 }
 
 @Composable
-fun HomeSuccessView(modifier: Modifier = Modifier, data: HomeUiData, onMediaClick: (Int) -> Unit,) {
+fun HomeSuccessView(
+    modifier: Modifier = Modifier,
+    data: HomeUiData,
+    onMediaClick: (Int) -> Unit,
+) {
     val topRated = data.topRated.collectAsLazyPagingItems()
     val trending = data.trending.collectAsLazyPagingItems()
     val popular = data.popular.collectAsLazyPagingItems()
@@ -113,7 +114,7 @@ fun HomeSuccessView(modifier: Modifier = Modifier, data: HomeUiData, onMediaClic
                         data = trending,
                         mediaStyle = MediaCardStyle.Cover(CoverVariant.NORMAL),
                         animatedContentScope = this@AnimatedVisibility,
-                        onSeeAllClick = {  },
+                        onSeeAllClick = { },
                         onMediaClick = onMediaClick
                     )
                 }
@@ -124,7 +125,7 @@ fun HomeSuccessView(modifier: Modifier = Modifier, data: HomeUiData, onMediaClic
                         data = popular,
                         mediaStyle = MediaCardStyle.Cover(CoverVariant.NORMAL),
                         animatedContentScope = this@AnimatedVisibility,
-                        onSeeAllClick = {  },
+                        onSeeAllClick = { },
                         onMediaClick = onMediaClick
                     )
                 }
@@ -135,12 +136,12 @@ fun HomeSuccessView(modifier: Modifier = Modifier, data: HomeUiData, onMediaClic
                         data = upcoming,
                         mediaStyle = MediaCardStyle.Cover(CoverVariant.NORMAL),
                         animatedContentScope = this@AnimatedVisibility,
-                        onSeeAllClick = {  },
+                        onSeeAllClick = { },
                         onMediaClick = onMediaClick
                     )
                 }
 
-                stickyHeader() {
+                stickyHeader {
                     SectionHeader(
                         title = "Top Rated",
                         onSeeAllClick = null,
@@ -148,7 +149,9 @@ fun HomeSuccessView(modifier: Modifier = Modifier, data: HomeUiData, onMediaClic
                     )
                 }
 
-                items(topRated.itemCount, key = { index -> topRated[index]?.id ?: index }) { index ->
+                items(
+                    topRated.itemCount,
+                    key = { index -> topRated[index]?.id ?: index }) { index ->
                     val entity = topRated[index]
                     if (entity != null) {
                         MediaCard(
@@ -226,7 +229,7 @@ fun SharedTransitionScope.MediaHorizontalSection(
 
             // ❌ Error state
             isError -> {
-                Row (
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
@@ -339,9 +342,6 @@ fun SectionHeader(
         }
     }
 }
-
-
-
 
 
 fun formatTimestampToDate(timestamp: Long?): String? {

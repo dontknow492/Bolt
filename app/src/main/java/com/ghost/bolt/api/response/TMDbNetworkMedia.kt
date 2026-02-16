@@ -92,8 +92,8 @@ data class TMDbNetworkMedia(
     val lastAirDateLong: Long?
         get() = try {
             if (!lastAirDate.isNullOrBlank()) {
-                java.time.LocalDate.parse(lastAirDate)
-                    .atStartOfDay(java.time.ZoneId.systemDefault())
+                LocalDate.parse(lastAirDate)
+                    .atStartOfDay(ZoneId.systemDefault())
                     .toInstant()
                     .toEpochMilli()
             } else null

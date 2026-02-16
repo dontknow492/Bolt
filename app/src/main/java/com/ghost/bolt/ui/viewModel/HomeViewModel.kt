@@ -36,7 +36,7 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
-    private var  mediaType: AppMediaType? = null
+    private var mediaType: AppMediaType? = null
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     fun load(mediaType: AppMediaType) {

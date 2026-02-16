@@ -1,12 +1,6 @@
 package com.ghost.bolt.utils
 
-import android.content.Context
 import androidx.compose.ui.graphics.Color
-import com.ghost.bolt.ui.components.loadImageBitmapFromUrl
-import com.ghost.bolt.ui.theme.SeedColor
-import com.materialkolor.ktx.themeColor
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 object ThemeColorCache {
 
