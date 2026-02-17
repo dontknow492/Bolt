@@ -1,35 +1,21 @@
 package com.ghost.bolt.api.response
 
-import com.ghost.bolt.database.entity.CastEntity
-import com.ghost.bolt.database.entity.cross_ref.MediaCastCrossRef
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class NetworkCast(
-    @SerialName("id") val id: Int,
-    @SerialName("name") val name: String,
-    @SerialName("character") val character: String? = null,
-    @SerialName("profile_path") val profilePath: String? = null,
-    @SerialName("order") val order: Int,
-    @SerialName("known_for_department") val knownForDepartment: String? = null
+    @SerialName("adult") var adult: Boolean? = null,
+    @SerialName("gender") var gender: Int? = null,
+    @SerialName("id") var id: Int,
+    @SerialName("known_for_department") var knownForDepartment: String? = null,
+    @SerialName("name") var name: String? = null,
+    @SerialName("original_name") var originalName: String? = null,
+    @SerialName("popularity") var popularity: Double? = null,
+    @SerialName("profile_path") var profilePath: String? = null,
+    @SerialName("cast_id") var castId: Int? = null,
+    @SerialName("character") var character: String? = null,
+    @SerialName("credit_id") var creditId: String? = null,
+    @SerialName("order") var order: Int? = null
 )
 
-
-fun NetworkCast.toCastEntity(): CastEntity {
-    return CastEntity(
-        castId = id,
-        name = name,
-        profilePath = profilePath,
-        knownForDepartment = knownForDepartment,
-    )
-}
-
-fun NetworkCast.toMediaCastCrossRef(mediaId: Int): MediaCastCrossRef {
-    return MediaCastCrossRef(
-        mediaId = mediaId,
-        castId = id,
-        characterName = character,
-        creditOrder = order
-    )
-}

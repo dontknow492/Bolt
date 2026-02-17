@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -26,9 +27,9 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.ghost.bolt.R
 import com.ghost.bolt.enums.AppMediaType
-import com.ghost.bolt.ui.screen.DetailedMediaScreen
 import com.ghost.bolt.ui.screen.HomeScreen
 import com.ghost.bolt.ui.screen.SearchScreen
+import com.ghost.bolt.ui.screen.detail.DetailedMediaScreen
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -42,7 +43,12 @@ object SearchKey : NavKey
 
 
 @Serializable
-data class DetailMediaKey(val mediaId: Int) : NavKey
+data class DetailMediaKey(
+    val mediaId: Int,
+    val coverPath: String? = null,
+    val title: String? = null,
+    val backdropPath: String? = null
+) : NavKey
 
 
 val navigationBarItem = listOf(
@@ -104,7 +110,7 @@ val navigationBarItem = listOf(
 
 @Composable
 fun NavigationRoot(modifier: Modifier = Modifier) {
-    val backStack = rememberNavBackStack(TVHomeKey)
+    val backStack = rememberNavBackStack(MovieHomeKey)
 
     val isBottomBarVisible = remember(backStack.size) {
         val topKey = backStack.lastOrNull()
@@ -122,9 +128,17 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
 
     }
 
-    val onMediaClick: (Int) -> Unit = { mediaId ->
-        backStack.add(DetailMediaKey(mediaId))
+    val onBackClick: () -> Unit = {
+        backStack.removeLastOrNull()
+        if (backStack.isEmpty()) {
+            selected = TVHomeKey
+        }
     }
+
+    val onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit =
+        { mediaId, coverPath, title, backdropPath ->
+            backStack.add(DetailMediaKey(mediaId, coverPath, title, backdropPath))
+        }
 
 
 
@@ -197,7 +211,15 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                     is DetailMediaKey -> {
                         NavEntry(key = key) {
                             DetailedMediaScreen(
-                                mediaId = key.mediaId
+                                mediaId = key.mediaId,
+                                modifier = Modifier.fillMaxSize(),
+                                onBackClick = onBackClick,
+                                coverPath = key.coverPath,
+                                title = key.title,
+                                backdropPath = key.backdropPath,
+                                onCastClick = { /*TODO*/ },
+                                onMediaClick = onMediaClick,
+                                onGenreClick = { _, _ -> }
                             )
                         }
                     }
@@ -207,5 +229,5 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
             }
         )
     }
-
 }
+

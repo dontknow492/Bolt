@@ -21,9 +21,10 @@ fun SharedTransitionScope.MediaCoverView(
     mediaId: Int,
     title: String,
     posterUrl: String?,
+    backdropUrl: String?,
     variant: CoverVariant,
     modifier: Modifier = Modifier,
-    onMediaClick: (Int) -> Unit,
+    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val posterWidth = when (variant) {
@@ -35,7 +36,7 @@ fun SharedTransitionScope.MediaCoverView(
     Column(
         modifier = modifier
             .width(posterWidth)
-            .clickable(onClick = { onMediaClick(mediaId) })
+            .clickable(onClick = { onMediaClick(mediaId, posterUrl, title, backdropUrl) })
     ) {
         CoverImage(
             title,

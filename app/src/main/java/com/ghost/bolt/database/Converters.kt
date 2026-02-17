@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.room.TypeConverter
 import com.ghost.bolt.enums.AppMediaType
+import com.ghost.bolt.enums.MediaSource
 import com.ghost.bolt.enums.RefreshFrequency
 import com.ghost.bolt.enums.Season
 import com.ghost.bolt.enums.Status
@@ -16,6 +17,18 @@ class Converters {
 
     // A formatter to match the Kaggle/TMDB SQL format (YYYY-MM-DD)
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+
+
+    @TypeConverter
+    fun sourceStringToEnum(value: String): MediaSource {
+        val source = MediaSource.entries.find { it.name.equals(value, ignoreCase = true) }
+        return source ?: throw IllegalArgumentException("Invalid MediaSource: $value")
+    }
+
+    @TypeConverter
+    fun sourceEnumToString(source: MediaSource): String {
+        return source.name
+    }
 
     /**
      * Reads the "YYYY-MM-DD" String from your SQLite database
@@ -123,4 +136,6 @@ class Converters {
             null
         }
     }
+
+
 }

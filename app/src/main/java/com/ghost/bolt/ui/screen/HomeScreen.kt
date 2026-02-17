@@ -41,8 +41,6 @@ import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.ghost.bolt.database.entity.MediaEntity
-import com.ghost.bolt.database.entity.TmdbImageSize
-import com.ghost.bolt.database.entity.getPosterUrl
 import com.ghost.bolt.enums.AppMediaType
 import com.ghost.bolt.ui.components.card.CoverVariant
 import com.ghost.bolt.ui.components.card.MediaCard
@@ -51,6 +49,7 @@ import com.ghost.bolt.ui.components.card.MediaCardStyle
 import com.ghost.bolt.ui.viewModel.HomeUiData
 import com.ghost.bolt.ui.viewModel.HomeUiState
 import com.ghost.bolt.ui.viewModel.HomeViewModel
+import com.ghost.bolt.utils.TmdbConfig
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -59,7 +58,7 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
-    onMediaClick: (Int) -> Unit,
+    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
     mediaType: AppMediaType,
     modifier: Modifier = Modifier
 ) {
@@ -94,7 +93,7 @@ fun HomeScreen(
 fun HomeSuccessView(
     modifier: Modifier = Modifier,
     data: HomeUiData,
-    onMediaClick: (Int) -> Unit,
+    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
 ) {
     val topRated = data.topRated.collectAsLazyPagingItems()
     val trending = data.trending.collectAsLazyPagingItems()
@@ -154,19 +153,12 @@ fun HomeSuccessView(
                     key = { index -> topRated[index]?.id ?: index }) { index ->
                     val entity = topRated[index]
                     if (entity != null) {
-                        MediaCard(
-                            modifier = Modifier.padding(horizontal = 8.dp),
-                            mediaId = entity.id,
-                            title = entity.title,
-                            posterUrl = entity.getPosterUrl(TmdbImageSize.W342),
-                            voteAverage = entity.voteAverage,
-                            voteCount = entity.voteCount,
-                            overview = entity.overview,
-                            releaseDate = formatTimestampToDate(entity.releaseDate),
-                            mediaType = entity.mediaType,
-                            style = MediaCardStyle.List,
+                        Entity(
+                            entity = entity,
+                            mediaStyle = MediaCardStyle.List,
+                            modifier = Modifier,
                             onMediaClick = onMediaClick,
-                            animatedVisibilityScope = this@AnimatedVisibility,
+                            animatedContentScope = this@AnimatedVisibility
                         )
                     }
 
@@ -188,9 +180,8 @@ fun SharedTransitionScope.MediaHorizontalSection(
     animatedContentScope: AnimatedVisibilityScope,
     onSeeAllClick: () -> Unit,
     onRetry: () -> Unit = { data.retry() },
-    onMediaClick: (Int) -> Unit,
+    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
 ) {
-
 
     val refreshState = data.loadState.refresh
     val isLoading = refreshState is LoadState.Loading
@@ -269,18 +260,12 @@ fun SharedTransitionScope.MediaHorizontalSection(
                         val entity = data[index]
 
                         if (entity != null) {
-                            MediaCard(
-                                mediaId = entity.id,
-                                title = entity.title,
-                                posterUrl = entity.getPosterUrl(TmdbImageSize.W342),
-                                voteAverage = entity.voteAverage,
-                                voteCount = entity.voteCount,
-                                overview = entity.overview,
-                                releaseDate = formatTimestampToDate(entity.releaseDate),
-                                mediaType = entity.mediaType,
-                                style = mediaStyle,
+                            Entity(
+                                entity = entity,
+                                mediaStyle = mediaStyle,
+                                modifier = Modifier,
                                 onMediaClick = onMediaClick,
-                                animatedVisibilityScope = animatedContentScope,
+                                animatedContentScope = animatedContentScope
                             )
                         }
                     }
@@ -288,6 +273,33 @@ fun SharedTransitionScope.MediaHorizontalSection(
             }
         }
     }
+}
+
+@Composable
+fun SharedTransitionScope.Entity(
+    entity: MediaEntity,
+    mediaStyle: MediaCardStyle,
+    modifier: Modifier = Modifier,
+    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
+    animatedContentScope: AnimatedVisibilityScope
+) {
+    val posterUrl = TmdbConfig.getPosterUrl(entity.posterPath, TmdbConfig.TMDbPosterSize.W342)
+    val backdropUrl = TmdbConfig.getBackdropUrl(entity.backdropPath)
+    MediaCard(
+        modifier = modifier,
+        mediaId = entity.id,
+        title = entity.title,
+        posterUrl = posterUrl,
+        backdropUrl = backdropUrl,
+        voteAverage = entity.voteAverage,
+        voteCount = entity.voteCount,
+        overview = entity.overview,
+        releaseDate = formatTimestampToDate(entity.releaseDate),
+        mediaType = entity.mediaType,
+        style = mediaStyle,
+        onMediaClick = onMediaClick,
+        animatedVisibilityScope = animatedContentScope,
+    )
 }
 
 @Composable

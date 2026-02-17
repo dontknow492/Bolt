@@ -34,12 +34,13 @@ fun SharedTransitionScope.MediaDetailedView(
     mediaId: Int,
     title: String,
     posterUrl: String?,
+    backdropUrl: String?,
     voteAverage: Float?,
     voteCount: Int?, // Extra info
     overview: String?,
     releaseDate: String?,
     mediaType: AppMediaType?, // Extra info (Movie / TV)
-    onMediaClick: (Int) -> Unit,
+    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
     modifier: Modifier = Modifier,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
@@ -52,7 +53,7 @@ fun SharedTransitionScope.MediaDetailedView(
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        onClick = { onMediaClick(mediaId) },
+        onClick = { onMediaClick(mediaId, posterUrl, title, backdropUrl) },
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
     ) {
         Row(modifier = Modifier.fillMaxSize()) {

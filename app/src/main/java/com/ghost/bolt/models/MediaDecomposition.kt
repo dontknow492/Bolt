@@ -45,28 +45,40 @@ data class MediaDecomposition(
 fun TMDbNetworkMedia.toDecomposition(): MediaDecomposition {
     val mediaId = this.id
     val mediaEntity = this.toMediaEntity()
+    val mediaType = mediaEntity.mediaType
+    val mediaSource = mediaEntity.mediaSource
+
 
     // 1. Genres
     val genres = this.genres?.map { GenreEntity(genreId = it.id, name = it.name) } ?: emptyList()
-    val genreCrossRefs = genres.map { MediaGenreCrossRef(mediaId, it.genreId) }
+    val genreCrossRefs =
+        genres.map { MediaGenreCrossRef(mediaId, mediaType, mediaSource, it.genreId) }
 
     // 2. Keywords
     val keywords = this.keywords?.all?.map { KeywordEntity(keywordId = it.id, keywords = it.name) }
         ?: emptyList()
-    val keywordCrossRefs = keywords.map { MediaKeywordCrossRef(mediaId, it.keywordId) }
+    val keywordCrossRefs =
+        keywords.map { MediaKeywordCrossRef(mediaId, mediaType, mediaSource, it.keywordId) }
 
     // 3. Companies
     val companies = this.productionCompanies?.map {
         ProductionCompanyEntity(productionCompanyId = it.id, productionCompanies = it.name)
     } ?: emptyList()
     val companyCrossRefs =
-        companies.map { MediaProductionCompanyCrossRef(mediaId, it.productionCompanyId) }
+        companies.map {
+            MediaProductionCompanyCrossRef(
+                mediaId,
+                mediaType,
+                mediaSource,
+                it.productionCompanyId
+            )
+        }
 
     // 4. Cast (Note: We use the hash of the ISO code if your Entity ID is Int)
     val castEntities = this.credits?.cast?.map { networkCast ->
         CastEntity(
             castId = networkCast.id,
-            name = networkCast.name,
+            name = networkCast.name ?: "Unknown",
             profilePath = networkCast.profilePath,
             knownForDepartment = networkCast.knownForDepartment
         )
@@ -76,6 +88,8 @@ fun TMDbNetworkMedia.toDecomposition(): MediaDecomposition {
     val castCrossRefs = this.credits?.cast?.map { networkCast ->
         MediaCastCrossRef(
             mediaId = mediaId,
+            mediaType = mediaType,
+            mediaSource = mediaSource,
             castId = networkCast.id,
             characterName = networkCast.character, // From NetworkCast
             creditOrder = networkCast.order ?: 0 // From NetworkCast
@@ -87,7 +101,14 @@ fun TMDbNetworkMedia.toDecomposition(): MediaDecomposition {
         SpokenLanguageEntity(spokenLanguageId = it.isoCode.hashCode(), spokenLanguages = it.name)
     } ?: emptyList()
     val languageCrossRefs =
-        languages.map { MediaSpokenLanguageCrossRef(mediaId, it.spokenLanguageId) }
+        languages.map {
+            MediaSpokenLanguageCrossRef(
+                mediaId,
+                mediaType,
+                mediaSource,
+                it.spokenLanguageId
+            )
+        }
 
     // 6. Production Countries
     val countries = this.productionCountries?.map {
@@ -97,18 +118,41 @@ fun TMDbNetworkMedia.toDecomposition(): MediaDecomposition {
         )
     } ?: emptyList()
     val countryCrossRefs =
-        countries.map { MediaProductionCountryCrossRef(mediaId, it.productionCountryId) }
+        countries.map {
+            MediaProductionCountryCrossRef(
+                mediaId,
+                mediaType,
+                mediaSource,
+                it.productionCountryId
+            )
+        }
 
     // 7. Recommendations
     val recommendedList = this.recommendations?.results?.map { it.toMediaEntity() } ?: emptyList()
     val recommendationCrossRefs = recommendedList.mapIndexed { index, target ->
-        MediaRecommendationCrossRef(mediaId, target.id, displayOrder = index)
+        MediaRecommendationCrossRef(
+            mediaId,
+            mediaType,
+            mediaSource,
+            target.id,
+            targetMediaType = target.mediaType,
+            targetMediaSource = target.mediaSource,
+            displayOrder = index
+        )
     }
 
     // 8. Similar
     val similarList = this.similar?.results?.map { it.toMediaEntity() } ?: emptyList()
     val similarCrossRefs = similarList.mapIndexed { index, target ->
-        MediaSimilarCrossRef(mediaId, target.id, displayOrder = index)
+        MediaSimilarCrossRef(
+            mediaId,
+            mediaType,
+            mediaSource,
+            target.id,
+            targetMediaType = target.mediaType,
+            targetMediaSource = target.mediaSource,
+            displayOrder = index
+        )
     }
 
     return MediaDecomposition(
@@ -131,3 +175,5 @@ fun TMDbNetworkMedia.toDecomposition(): MediaDecomposition {
         similarCrossRefs = similarCrossRefs
     )
 }
+
+

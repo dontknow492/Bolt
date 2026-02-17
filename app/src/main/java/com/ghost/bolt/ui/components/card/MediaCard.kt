@@ -26,13 +26,14 @@ fun SharedTransitionScope.MediaCard(
     mediaId: Int,
     title: String,
     posterUrl: String?,
+    backdropUrl: String?,
     voteAverage: Float?,
     voteCount: Int? = null, // New
     overview: String?,
     releaseDate: String?,
     mediaType: AppMediaType? = null, // New
     style: MediaCardStyle,
-    onMediaClick: (Int) -> Unit,
+    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     // AnimatedContent handles the state transition automatically
@@ -51,6 +52,7 @@ fun SharedTransitionScope.MediaCard(
                     animatedVisibilityScope = animatedVisibilityScope,
                     title = title,
                     posterUrl = posterUrl,
+                    backdropPath = backdropUrl,
                     voteAverage = voteAverage,
                     overview = overview,
                     onMediaClick = onMediaClick,
@@ -65,6 +67,7 @@ fun SharedTransitionScope.MediaCard(
                     mediaId = mediaId,
                     title = title,
                     posterUrl = posterUrl,
+                    backdropUrl = backdropUrl,
                     variant = targetStyle.variant,
                     modifier = modifier,
                     onMediaClick = onMediaClick,
@@ -79,6 +82,7 @@ fun SharedTransitionScope.MediaCard(
                     animatedVisibilityScope = animatedVisibilityScope,
                     title = title,
                     posterUrl = posterUrl,
+                    backdropUrl = backdropUrl,
                     voteAverage = voteAverage,
                     voteCount = voteCount,
                     overview = overview,
@@ -129,8 +133,9 @@ private fun MediaCardPreview() {
                     MediaCard(
                         mediaId = sampleMediaId,
                         title = sampleTitle,
-                        onMediaClick = {},
+                        onMediaClick = { _, _, _, _ -> },
                         posterUrl = samplePosterUrl,
+                        backdropUrl = samplePosterUrl,
                         voteAverage = sampleVoteAverage,
                         voteCount = sampleVoteCount,
                         overview = sampleOverview,

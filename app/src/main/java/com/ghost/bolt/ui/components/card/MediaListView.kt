@@ -4,6 +4,7 @@ package com.ghost.bolt.ui.components.card
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -46,11 +47,12 @@ fun SharedTransitionScope.MediaListView(
     mediaId: Int,
     title: String,
     posterUrl: String?,
+    backdropPath: String?,
     voteAverage: Float?,
     overview: String?,
     releaseDate: String?,
     modifier: Modifier = Modifier,
-    onMediaClick: (Int) -> Unit,
+    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     Card(
@@ -58,7 +60,7 @@ fun SharedTransitionScope.MediaListView(
             .fillMaxWidth()
             .height(140.dp), // Fixed height for consistent list items
         shape = RoundedCornerShape(12.dp),
-        onClick = { onMediaClick(mediaId) },
+        onClick = { onMediaClick(mediaId, posterUrl, title, backdropPath) },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
@@ -186,9 +188,13 @@ fun SharedTransitionScope.CoverImage(
             }
 
             else -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                Box(modifier = Modifier.align(Alignment.Center)) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(30.dp)
+                    )
+                }
             }
         }
     }

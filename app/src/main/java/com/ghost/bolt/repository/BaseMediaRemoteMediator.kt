@@ -9,8 +9,9 @@ import com.ghost.bolt.database.AppDatabase
 import com.ghost.bolt.database.entity.MediaEntity
 import com.ghost.bolt.database.entity.RemoteKeyEntity
 import com.ghost.bolt.database.entity.cross_ref.MediaCategoryCrossRef
+import com.ghost.bolt.enums.RefreshFrequency
 import timber.log.Timber
-import java.util.concurrent.TimeUnit
+import java.time.Instant
 
 @OptIn(ExperimentalPagingApi::class)
 abstract class BaseMediaRemoteMediator(
@@ -26,16 +27,30 @@ abstract class BaseMediaRemoteMediator(
     abstract suspend fun fetchFromNetwork(page: Int): List<MediaEntity>
 
     override suspend fun initialize(): InitializeAction {
-        val remoteKey = db.remoteKeysDao().getRemoteKeyByLabel(remoteKeyLabel)
-        val lastUpdated = remoteKey?.lastUpdated ?: 0L
-        val cacheTimeout = TimeUnit.HOURS.toMillis(24)
+        val category = db.categoryDao().getCategoryById(categoryId)
 
-        return if (System.currentTimeMillis() - lastUpdated < cacheTimeout) {
-            Timber.d("[%s] Cache is FRESH. Skipping initial refresh.", remoteKeyLabel)
-            InitializeAction.SKIP_INITIAL_REFRESH
+        val refreshFrequency = category?.refreshFrequency
+            ?: RefreshFrequency.DAILY // fallback safety
+
+        val remoteKey = db.remoteKeysDao()
+            .getRemoteKeyByLabel(remoteKeyLabel)
+
+        val lastUpdatedMillis = remoteKey?.lastUpdated ?: 0L
+
+        val now = Instant.now()
+
+        val shouldRefresh = if (lastUpdatedMillis == 0L) {
+            true
         } else {
-            Timber.d("[%s] Cache is STALE. Launching initial refresh.", remoteKeyLabel)
+            val lastUpdated = Instant.ofEpochMilli(lastUpdatedMillis)
+            val nextAllowedRefresh = refreshFrequency.nextRefreshFrom(lastUpdated)
+            now.isAfter(nextAllowedRefresh)
+        }
+
+        return if (shouldRefresh) {
             InitializeAction.LAUNCH_INITIAL_REFRESH
+        } else {
+            InitializeAction.SKIP_INITIAL_REFRESH
         }
     }
 
@@ -78,7 +93,13 @@ abstract class BaseMediaRemoteMediator(
                 else (db.mediaDao().getLastPositionByCategory(categoryId) ?: 0) + 1
 
                 val links = entities.mapIndexed { index, media ->
-                    MediaCategoryCrossRef(media.id, categoryId, startingPos + index)
+                    MediaCategoryCrossRef(
+                        media.id,
+                        media.mediaType,
+                        media.mediaSource,
+                        categoryId,
+                        startingPos + index
+                    )
                 }
                 db.mediaDao().upsertMediaCategoryLinks(links)
             }

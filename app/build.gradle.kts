@@ -88,6 +88,7 @@ dependencies {
     //coil3
     implementation(libs.coil3)
     implementation(libs.coil3.network.okhttp)
+    implementation(libs.coil.transformations)
 
     //room
     implementation(libs.androidx.room.runtime)

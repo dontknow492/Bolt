@@ -39,7 +39,7 @@ data class TMDbNetworkMedia(
     @SerialName("name") val name: String? = null,
     @SerialName("first_air_date") val firstAirDate: String? = null,
     @SerialName("original_name") val originalName: String? = null,
-    @SerialName("origin_country") val originCountry: List<String>? = null,
+    @SerialName("origin_country") val originCountry: List<String>? = emptyList(),
     // TV-Specific Status Fields
     @SerialName("last_air_date") val lastAirDate: String? = null,
     @SerialName("in_production") val inProduction: Boolean? = null,
@@ -64,7 +64,11 @@ data class TMDbNetworkMedia(
     @SerialName("credits") val credits: NetworkCredits? = null,
     @SerialName("videos") val videos: NetworkVideos? = null,
     @SerialName("similar") val similar: TmdbResponse? = null,
-    @SerialName("recommendations") val recommendations: TmdbResponse? = null
+    @SerialName("recommendations") val recommendations: TmdbResponse? = null,
+
+    //
+    @SerialName("belongs_to_collection") val belongsToCollection: String? = null,
+//    @SerialName("origin_country") val originCountry: String? = null,
 ) {
     /**
      * Helper to get a title regardless of media type
@@ -119,6 +123,8 @@ data class TMDbNetworkMedia(
 @Serializable
 data class NetworkSpokenLanguage(
     @SerialName("iso_639_1") val isoCode: String, // Note: Maps to your Entity ID
-    @SerialName("name") val name: String
+    @SerialName("name") val name: String,
+    @SerialName("english_name") val englishName: String
+
 )
 

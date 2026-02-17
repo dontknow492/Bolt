@@ -9,6 +9,7 @@ import androidx.room.Upsert
 import androidx.sqlite.db.SupportSQLiteQuery
 import com.ghost.bolt.database.entity.MediaDetail
 import com.ghost.bolt.database.entity.MediaEntity
+import com.ghost.bolt.database.entity.cross_ref.MediaCastCrossRef
 import com.ghost.bolt.database.entity.cross_ref.MediaCategoryCrossRef
 import com.ghost.bolt.database.entity.cross_ref.MediaRecommendationCrossRef
 import com.ghost.bolt.database.entity.cross_ref.MediaSimilarCrossRef
@@ -19,6 +20,10 @@ interface MediaDao {
 
     // --- 1. HOME SCREEN (Paging) ---
     // Fetches movies for a horizontal row (e.g. Popular), ordered by API position
+
+    @Query("SELECT * FROM Media WHERE id = :mediaId")
+    suspend fun getMedia(mediaId: Int): MediaEntity?
+
     @Transaction
     @Query(
         """
@@ -40,7 +45,7 @@ interface MediaDao {
     // Fetches everything (Cast, Genres, etc.) in one transaction
     @Transaction
     @Query("SELECT * FROM Media WHERE id = :mediaId")
-    fun getMediaDetail(mediaId: Int): Flow<MediaDetail?>
+    fun getMediaDetailFlow(mediaId: Int): Flow<MediaDetail?>
 
     // --- 3. SEARCH & DISCOVERY (Complex) ---
     // Use this for simple name search
@@ -85,6 +90,18 @@ interface MediaDao {
      */
     @Upsert
     suspend fun upsertSimilarMovies(similar: List<MediaSimilarCrossRef>)
+
+
+    @Query("SELECT * FROM MediaCast WHERE media_id = :mediaId")
+    suspend fun getCastCrossRefs(mediaId: Int): List<MediaCastCrossRef>
+
+    @Query("SELECT * FROM MediaRecommendations WHERE source_media_id = :mediaId")
+    suspend fun getRecommendationCrossRefs(mediaId: Int): List<MediaRecommendationCrossRef>
+
+    @Query("SELECT * FROM MediaSimilar WHERE source_media_id = :mediaId")
+    suspend fun getSimilarCrossRefs(mediaId: Int): List<MediaSimilarCrossRef>
+
+
 }
 
 

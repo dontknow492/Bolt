@@ -7,37 +7,39 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.room.withTransaction
 import com.ghost.bolt.api.TmdbApi
-import com.ghost.bolt.api.response.toCastEntity
-import com.ghost.bolt.api.response.toMediaCastCrossRef
 import com.ghost.bolt.database.AppDatabase
-import com.ghost.bolt.database.entity.MediaDetail
 import com.ghost.bolt.database.entity.MediaEntity
-import com.ghost.bolt.database.entity.cross_ref.MediaRecommendationCrossRef
-import com.ghost.bolt.database.entity.cross_ref.MediaSimilarCrossRef
 import com.ghost.bolt.enums.AppCategory
 import com.ghost.bolt.enums.AppMediaType
 import com.ghost.bolt.enums.AppendToResponseItem
 import com.ghost.bolt.enums.MediaProvider
+import com.ghost.bolt.enums.MediaSource
 import com.ghost.bolt.enums.toTmdbCategoryOrNull
 import com.ghost.bolt.enums.toTmdbMediaType
 import com.ghost.bolt.exceptions.InvalidMediaCategoryException
 import com.ghost.bolt.exceptions.InvalidMediaTypeException
+import com.ghost.bolt.models.UiMediaDetail
+import com.ghost.bolt.models.toDecomposition
 import com.ghost.bolt.utils.TmdbQueryUtils
-import com.ghost.bolt.utils.mapper.toMediaEntity
+import com.ghost.bolt.utils.mapper.toUiMediaDetail
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class MediaRepository @Inject constructor(
     private val db: AppDatabase,
-    private val api: TmdbApi
+    private val tmdbApi: TmdbApi
 ) {
     private val mediaDao = db.mediaDao()
     private val castDao = db.castDao()
     private val categoryDao = db.categoryDao()
+    private val decompositionDao = db.mediaDecompositionDao()
 
 
     // --- 1. HOME SCREEN PAGERS ---
@@ -83,7 +85,7 @@ class MediaRepository @Inject constructor(
                     ),
                     remoteMediator = TmdbRemoteMediator(
                         db = db,
-                        api = api,
+                        api = tmdbApi,
                         categoryId = categoryId,
                         category = tmdbCategory,
                         mediaType = tmdbMediaType
@@ -100,97 +102,78 @@ class MediaRepository @Inject constructor(
         }
     }
 
-    // --- 2. DETAIL PAGE ---
-    // This follows the "Network-Bound Resource" pattern:
-    // Show DB data first, then update from Network in background.
+    /**
+     * Fetches everything for a movie in ONE network call and updates the DB.
+     */
+    suspend fun refreshMediaDetail(mediaId: Int) = withContext(Dispatchers.IO) {
+        Timber.i("Refreshing media detail for ID: %d", mediaId)
+        try {
+            // 1. One API call to get Movie + Cast + Recommendations
+            val mediaEntity = mediaDao.getMedia(mediaId)
+                ?: throw IllegalArgumentException("Media not found")
+
+            when (val source = mediaEntity.mediaSource) {
+                MediaSource.TMDB -> {
+                    val networkMovie = tmdbApi.getMovie(
+                        movieId = mediaId,
+                        appendToResponse = TmdbQueryUtils.buildAppendToResponse(
+                            AppendToResponseItem.CREDITS,
+                            AppendToResponseItem.RECOMMENDATIONS,
+                            AppendToResponseItem.VIDEOS
+                        )
+                    )
+
+                    // 2. Wrap everything in a transaction for data integrity
+                    db.withTransaction {
+                        // A. Update the core movie data (including budget, runtime, etc.)
+                        val coreEntity = networkMovie.toDecomposition()
+                        decompositionDao.insertDecomposition(coreEntity)
+
+                    }
+                }
+
+                MediaSource.ANILIST -> TODO()
+            }
+
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Timber.e(e, "Error refreshing media detail")
+        }
+    }
+
 
     /**
      * Returns a Flow of the MediaDetail.
      * This allows the UI to show cached data immediately and update automatically
      * when the network refresh completes.
      */
-    fun getMediaDetail(mediaId: Int): Flow<MediaDetail?> {
-        return mediaDao.getMediaDetail(mediaId)
-    }
-
-    /**
-     * Fetches everything for a movie in ONE network call and updates the DB.
-     */
-    suspend fun refreshMediaDetail(mediaId: Int) = withContext(Dispatchers.IO) {
+    suspend fun getUiMediaDetail(mediaId: Int): Flow<UiMediaDetail?> {
         try {
-            // 1. One API call to get Movie + Cast + Recommendations
-            val networkMovie = api.getMovie(
-                movieId = mediaId,
-                appendToResponse = TmdbQueryUtils.buildAppendToResponse(
-                    AppendToResponseItem.CREDITS,
-                    AppendToResponseItem.RECOMMENDATIONS,
-                    AppendToResponseItem.VIDEOS
-                )
-            )
+            return mediaDao.getMediaDetailFlow(mediaId).map { detail ->
+                if (detail == null) return@map null
 
-            // 2. Wrap everything in a transaction for data integrity
-            db.withTransaction {
-                // A. Update the core movie data (including budget, runtime, etc.)
-                val coreEntity = networkMovie.toMediaEntity()
-                mediaDao.upsertMedia(listOf(coreEntity))
+                // We fetch the metadata links "on demand" whenever the main detail updates.
+                // Note: Running suspend functions inside a Flow map requires some care,
+                // usually better to fetch these eagerly or combine flows.
+                // For simplicity, we can fetch them here if we trust the DB speed,
+                // OR better yet, expose them as Flows from the DAO and combine them.
 
-                // B. Handle Cast & Credits
-                networkMovie.credits?.cast?.let { castList ->
-                    val castEntities = castList.map { it.toCastEntity() }
-                    val crossRefs = castList.map { it.toMediaCastCrossRef(mediaId) }
+                // A simpler, synchronous approach for the DAO methods would be better here,
+                // OR we just execute the queries:
+                val castLinks = mediaDao.getCastCrossRefs(mediaId)
+                val recLinks = mediaDao.getRecommendationCrossRefs(mediaId)
+                val simLinks = mediaDao.getSimilarCrossRefs(mediaId)
 
-                    castDao.upsertCast(castEntities)
-                    castDao.upsertMediaCastLinks(crossRefs)
-                }
-
-                // C. Handle Recommendations
-                networkMovie.recommendations?.results?.let { recs ->
-                    // First, save the recommended movies as "shallow" records
-                    val recEntities = recs.map { it.toMediaEntity() }
-                    mediaDao.upsertMedia(recEntities)
-
-                    // Second, link them to the source movie
-                    val recLinks = recs.mapIndexed { index, rec ->
-                        MediaRecommendationCrossRef(
-                            sourceMediaId = mediaId,
-                            targetMediaId = rec.id,
-                            displayOrder = index
-                        )
-                    }
-                    mediaDao.upsertRecommendations(recLinks)
-                }
-
-                // D. Handle Similars
-                networkMovie.similar?.results?.let { recs ->
-                    // First, save the recommended movies as "shallow" records
-                    val similarEntities = recs.map { it.toMediaEntity() }
-                    mediaDao.upsertMedia(similarEntities)
-
-                    // Second, link them to the source movie
-                    val similarLinks = recs.mapIndexed { index, rec ->
-                        MediaSimilarCrossRef(
-                            sourceMediaId = mediaId,
-                            targetMediaId = rec.id,
-                            displayOrder = index
-                        )
-                    }
-                    mediaDao.upsertSimilarMovies(similarLinks)
-                }
+                detail.toUiMediaDetail(castLinks, recLinks, simLinks)
             }
+                .flowOn(Dispatchers.IO)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Timber.e(e, "Error getting media detail")
+            throw e
         }
-    }
 
-    // --- 3. SEARCH ---
-    fun searchMovies(query: String): Flow<PagingData<MediaEntity>> {
-        // For search, we typically don't use a RemoteMediator unless
-        // you want to cache search results.
-        // Here we just search the local DB (which is huge anyway!)
-        return Pager(
-            config = PagingConfig(pageSize = 20),
-            pagingSourceFactory = { mediaDao.searchByName(query) }
-        ).flow
+        // Ensure DB work happens on IO thread
     }
 
 }

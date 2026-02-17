@@ -3,6 +3,7 @@ package com.ghost.bolt.utils.mapper
 import com.ghost.bolt.api.response.TMDbNetworkMedia
 import com.ghost.bolt.database.Converters
 import com.ghost.bolt.database.entity.MediaEntity
+import com.ghost.bolt.enums.MediaSource
 
 
 /**
@@ -44,6 +45,7 @@ fun TMDbNetworkMedia.toMediaEntity(): MediaEntity {
         runtime = this.runtime,
         budget = this.budget,
         episodes = this.numberOfEpisodes, // Only populated in TV detail views
-        themeColor = null
+        themeColor = null,
+        mediaSource = MediaSource.TMDB
     )
 }

@@ -5,9 +5,15 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class NetworkCrew(
-    @SerialName("id") val id: Int,
-    @SerialName("name") val name: String,
-    @SerialName("job") val job: String? = null,
-    @SerialName("department") val department: String? = null,
-    @SerialName("profile_path") val profilePath: String? = null
+    @SerialName("adult") var adult: Boolean? = null,
+    @SerialName("gender") var gender: Int? = null,
+    @SerialName("id") var id: Int,
+    @SerialName("known_for_department") var knownForDepartment: String? = null,
+    @SerialName("name") var name: String? = null,
+    @SerialName("original_name") var originalName: String? = null,
+    @SerialName("popularity") var popularity: Double? = null,
+    @SerialName("profile_path") var profilePath: String? = null,
+    @SerialName("credit_id") var creditId: String? = null,
+    @SerialName("department") var department: String? = null,
+    @SerialName("job") var job: String? = null
 )
