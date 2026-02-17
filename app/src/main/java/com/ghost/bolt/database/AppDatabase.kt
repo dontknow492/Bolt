@@ -8,6 +8,7 @@ import androidx.room.TypeConverters
 import com.ghost.bolt.database.dao.CastDao
 import com.ghost.bolt.database.dao.CategoryDao
 import com.ghost.bolt.database.dao.MediaDao
+import com.ghost.bolt.database.dao.MediaDecompositionDao
 import com.ghost.bolt.database.dao.RemoteKeysDao
 import com.ghost.bolt.database.entity.CastEntity
 import com.ghost.bolt.database.entity.CategoryEntity
@@ -66,6 +67,9 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun categoryDao(): CategoryDao
 
+    abstract fun mediaDecompositionDao(): MediaDecompositionDao
+
+
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -75,7 +79,8 @@ abstract class AppDatabase : RoomDatabase() {
                     context = context.applicationContext,
                     klass = AppDatabase::class.java,
                     name = "app_database"
-                ).createFromAsset("database/media.db")
+                )
+                    .createFromAsset("database/category.db")
                     .build()
                 INSTANCE = instance
                 instance
