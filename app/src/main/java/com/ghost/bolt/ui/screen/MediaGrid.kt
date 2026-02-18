@@ -96,9 +96,11 @@ fun MediaGrid(
             )
         }
     ) { paddingValues ->
-        Box(modifier = modifier
-            .padding(paddingValues)
-            .fillMaxSize()) {
+        Box(
+            modifier = modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+        ) {
             when (val state = uiState) {
                 is MediaGridUiState.Error -> {
                     ErrorScreen(
