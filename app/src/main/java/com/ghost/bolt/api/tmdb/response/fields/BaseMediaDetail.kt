@@ -42,3 +42,5 @@ abstract class BaseMediaDetail {
     abstract val credits: NetworkCredits?
     abstract val videos: NetworkVideos?
 }
+
+

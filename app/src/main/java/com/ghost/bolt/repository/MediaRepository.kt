@@ -141,6 +141,7 @@ class MediaRepository @Inject constructor(
                                     AppendToResponseItem.RECOMMENDATIONS,
                                     AppendToResponseItem.VIDEOS,
                                     AppendToResponseItem.SIMILAR,
+                                    AppendToResponseItem.KEYWORDS
                                 )
                             )
                             details.toDecomposition(converter)
@@ -153,7 +154,9 @@ class MediaRepository @Inject constructor(
                                     AppendToResponseItem.CREDITS,
                                     AppendToResponseItem.RECOMMENDATIONS,
                                     AppendToResponseItem.SIMILAR,
-                                    AppendToResponseItem.VIDEOS
+                                    AppendToResponseItem.VIDEOS,
+                                    AppendToResponseItem.KEYWORDS
+
                                 )
                             )
                             details.toDecomposition(converter)

@@ -1,6 +1,7 @@
 package com.ghost.bolt.models
 
 import com.ghost.bolt.database.entity.GenreEntity
+import com.ghost.bolt.database.entity.KeywordEntity
 import com.ghost.bolt.database.entity.MediaEntity
 
 /**
@@ -13,7 +14,7 @@ data class UiMediaDetail(
 
     // Metadata Lists (Simplified for UI consumption)
     val genres: List<GenreEntity>,
-    val keywords: List<String>,
+    val keywords: List<KeywordEntity>,
 
     // Complex Relationships with Metadata
     val cast: List<UiCastMember>,

@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -31,6 +32,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -57,6 +59,7 @@ import coil3.compose.AsyncImage
 import com.ghost.bolt.R
 import com.ghost.bolt.database.entity.CastEntity
 import com.ghost.bolt.database.entity.GenreEntity
+import com.ghost.bolt.database.entity.KeywordEntity
 import com.ghost.bolt.database.entity.MediaDetail
 import com.ghost.bolt.database.entity.MediaEntity
 import com.ghost.bolt.enums.AppMediaType
@@ -65,6 +68,8 @@ import com.ghost.bolt.models.MediaCardUiModel
 import com.ghost.bolt.models.UiCastMember
 import com.ghost.bolt.models.UiMediaDetail
 import com.ghost.bolt.models.UiRelatedMedia
+import com.ghost.bolt.ui.components.CastItem
+import com.ghost.bolt.ui.components.CastSection
 import com.ghost.bolt.ui.components.card.CoverVariant
 import com.ghost.bolt.ui.components.card.MediaCardStyle
 import com.ghost.bolt.ui.components.card.MediaEntityCard
@@ -97,14 +102,23 @@ fun DetailSuccessContent(
 
             OverviewSection(media.overview)
 
+            KeywordSection(detail.keywords, onKeywordClick = {})
+
             CastSection(detail.cast, onCastClick)
 
             ExternalLinksSection(Modifier, media)
 
-            RecommendationSection(
+            RelatedMediaSection(
+                "Recommendations",
                 detail.recommendations,
                 onMediaClick
             )
+            RelatedMediaSection(
+                "Similar",
+                detail.similar,
+                onMediaClick
+            )
+
 
             Spacer(modifier = Modifier.height(80.dp))
         }
@@ -274,6 +288,45 @@ private fun GenreSection(
 }
 
 @Composable
+fun KeywordSection(
+    keywords: List<KeywordEntity>,
+    onKeywordClick: (Int) -> Unit
+) {
+    if (keywords.isEmpty()) return
+
+    Column {
+        Text(
+            text = "Keywords",
+            style = MaterialTheme.typography.titleMedium,
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items(keywords) { keyword ->
+                Surface(
+                    shape = RoundedCornerShape(8.dp), // Distinct "Tag" shape (less rounded than chips)
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.clickable { onKeywordClick(keyword.keywordId) }
+                ) {
+                    Text(
+                        text = "#${keyword.keywords}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+
+@Composable
 private fun OverviewSection(overview: String?) {
 
     if (overview.isNullOrBlank()) return
@@ -303,38 +356,19 @@ private fun OverviewSection(overview: String?) {
 }
 
 @Composable
-private fun CastSection(
-    cast: List<UiCastMember>,
-    onCastClick: (Int) -> Unit
-) {
-    if (cast.isEmpty()) return
-
-    Text("Top Cast", style = MaterialTheme.typography.titleMedium)
-
-    Spacer(Modifier.height(12.dp))
-
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        items(cast.take(15)) {
-            CastItem(it, onCastClick)
-        }
-    }
-
-    Spacer(modifier = Modifier.height(24.dp))
-}
-
-@Composable
-private fun RecommendationSection(
-    recommendations: List<UiRelatedMedia>,
+private fun RelatedMediaSection(
+    title: String,
+    relatedMediaItems: List<UiRelatedMedia>,
     onMediaClick: (MediaCardUiModel) -> Unit
 ) {
-    if (recommendations.isEmpty()) return
+    if (relatedMediaItems.isEmpty()) return
 
-    Text("Recommendations", style = MaterialTheme.typography.titleMedium)
+    Text(title, style = MaterialTheme.typography.titleMedium)
 
     Spacer(Modifier.height(12.dp))
 
     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(recommendations) { rec ->
+        items(relatedMediaItems) { rec ->
             SharedTransitionLayout {
                 AnimatedVisibility(true) {
                     MediaEntityCard(
@@ -347,35 +381,6 @@ private fun RecommendationSection(
             }
 
         }
-    }
-}
-
-@Composable
-fun CastItem(person: UiCastMember, onClick: (Int) -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .width(80.dp)
-            .clickable { onClick(person.id) }
-    ) {
-        AsyncImage(
-            model = "https://image.tmdb.org/t/p/w185${person.profilePath}",
-            contentDescription = person.name,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(70.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = person.name,
-            style = MaterialTheme.typography.bodySmall,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-            lineHeight = 14.sp
-        )
     }
 }
 
@@ -434,6 +439,12 @@ private fun SuccessContentPreview() {
         GenreEntity(1, "Action"),
         GenreEntity(2, "Adventure"),
         GenreEntity(3, "Science Fiction")
+    )
+
+    val sampleKeywords = listOf(
+        KeywordEntity(1, "Action"),
+        KeywordEntity(2, "Adventure"),
+        KeywordEntity(3, "Science Fiction")
     )
 
     val sampleCast = listOf(
@@ -515,9 +526,10 @@ private fun SuccessContentPreview() {
     val sampleDetail = MediaDetail(
         media = sampleMedia,
         genres = sampleGenres,
+
         cast = sampleCast,
         recommendations = sampleRecommendations,
-        keywords = emptyList(),
+        keywords = sampleKeywords,
         productionCompanies = emptyList(),
         spokenLanguages = emptyList(),
         similar = emptyList()
@@ -532,4 +544,5 @@ private fun SuccessContentPreview() {
         )
     }
 }
+
 

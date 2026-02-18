@@ -57,7 +57,7 @@ fun MediaDetail.toUiMediaDetail(
     return UiMediaDetail(
         media = this.media,
         genres = this.genres,
-        keywords = this.keywords.map { it.keywords },
+        keywords = this.keywords,
         cast = uiCast,
         crew = emptyList(), // Populate later if you add Crew tables
         recommendations = uiRecommendations,
