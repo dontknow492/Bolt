@@ -232,7 +232,8 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                                 onBackClick = onBackClick,
                                 onCastClick = { /*TODO*/ },
                                 onMediaClick = onMediaClick,
-                                onGenreClick = { _, _ -> }
+                                onGenreClick = { /*TODO*/ },
+                                onKeywordClick = { /*TODO*/ }
                             )
                         }
                     }

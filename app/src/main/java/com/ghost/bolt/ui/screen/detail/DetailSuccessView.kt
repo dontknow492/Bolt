@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -78,7 +79,8 @@ fun DetailSuccessContent(
     detail: UiMediaDetail,
     onCastClick: (Int) -> Unit,
     onMediaClick: (media: MediaCardUiModel) -> Unit,
-    onGenreClick: (Int, String) -> Unit
+    onGenreClick: (GenreEntity) -> Unit,
+    onKeywordClick: (KeywordEntity) -> Unit
 ) {
     val media = detail.media
 
@@ -96,7 +98,7 @@ fun DetailSuccessContent(
 
             OverviewSection(media.overview)
 
-            KeywordSection(detail.keywords, onKeywordClick = {})
+            KeywordSection(detail.keywords, onKeywordClick = onKeywordClick)
 
             CastSection(detail.cast, onCastClick)
 
@@ -265,14 +267,14 @@ fun ExternalLinksSection(modifier: Modifier = Modifier, media: MediaEntity) {
 @Composable
 private fun GenreSection(
     genres: List<GenreEntity>,
-    onGenreClick: (Int, String) -> Unit
+    onGenreClick: (GenreEntity) -> Unit
 ) {
     if (genres.isEmpty()) return
 
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items(genres) { genre ->
             SuggestionChip(
-                onClick = { onGenreClick(genre.genreId, genre.name) },
+                onClick = { onGenreClick(genre) },
                 label = { Text(genre.name) }
             )
         }
@@ -284,11 +286,18 @@ private fun GenreSection(
 @Composable
 fun KeywordSection(
     keywords: List<KeywordEntity>,
-    onKeywordClick: (Int) -> Unit
+    onKeywordClick: (KeywordEntity) -> Unit,
+    previewCount: Int = 6
 ) {
     if (keywords.isEmpty()) return
 
+    var expanded by remember { mutableStateOf(false) }
+
+    val previewKeywords = keywords.take(previewCount)
+    val remainingKeywords = keywords.drop(previewCount)
+
     Column {
+
         Text(
             text = "Keywords",
             style = MaterialTheme.typography.titleMedium,
@@ -296,20 +305,46 @@ fun KeywordSection(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        LazyRow(
+        // 🔹 Preview Row
+        FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(keywords) { keyword ->
-                Surface(
-                    shape = RoundedCornerShape(8.dp), // Distinct "Tag" shape (less rounded than chips)
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.clickable { onKeywordClick(keyword.keywordId) }
+            previewKeywords.forEach { keyword ->
+                KeywordChip(
+                    text = "#${keyword.keywords}",
+                    onClick = { onKeywordClick(keyword) }
+                )
+            }
+
+            if (!expanded && remainingKeywords.isNotEmpty()) {
+                KeywordChip(
+                    text = "+${remainingKeywords.size}",
+                    isExpandChip = true,
+                    onClick = { expanded = true }
+                )
+            }
+        }
+
+        // 🔹 Expanded Section
+        AnimatedVisibility(visible = expanded) {
+            Column {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = "#${keyword.keywords}",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    remainingKeywords.forEach { keyword ->
+                        KeywordChip(
+                            text = "#${keyword.keywords}",
+                            onClick = { onKeywordClick(keyword) }
+                        )
+                    }
+                    KeywordChip(
+                        text = "Show less",
+                        isExpandChip = true,
+                        onClick = { expanded = false }
                     )
                 }
             }
@@ -318,6 +353,39 @@ fun KeywordSection(
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
+
+
+@Composable
+private fun KeywordChip(
+    text: String,
+    onClick: () -> Unit,
+    isExpandChip: Boolean = false
+) {
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = if (isExpandChip)
+            MaterialTheme.colorScheme.primaryContainer
+        else
+            MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier.clickable { onClick() }
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (isExpandChip)
+                MaterialTheme.colorScheme.onPrimaryContainer
+            else
+                MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(
+                horizontal = 14.dp,
+                vertical = 8.dp
+            )
+        )
+    }
+}
+
+
+
 
 
 @Composable
@@ -438,7 +506,16 @@ private fun SuccessContentPreview() {
     val sampleKeywords = listOf(
         KeywordEntity(1, "Action"),
         KeywordEntity(2, "Adventure"),
-        KeywordEntity(3, "Science Fiction")
+        KeywordEntity(3, "Science Fiction"),
+        KeywordEntity(4, "Thriller"),
+        KeywordEntity(5, "Drama"),
+        KeywordEntity(6, "Mystery"),
+        KeywordEntity(1, "Action"),
+        KeywordEntity(2, "Adventure"),
+        KeywordEntity(3, "Science Fiction"),
+        KeywordEntity(4, "Thriller"),
+        KeywordEntity(5, "Drama"),
+        KeywordEntity(6, "Mystery")
     )
 
     val sampleCast = listOf(
@@ -534,7 +611,8 @@ private fun SuccessContentPreview() {
             detail = sampleDetail.toUiMediaDetail(emptyList(), emptyList(), emptyList()),
             onCastClick = {},
             onMediaClick = { },
-            onGenreClick = { _, _ -> }
+            onGenreClick = { },
+            onKeywordClick = { }
         )
     }
 }

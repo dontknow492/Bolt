@@ -11,6 +11,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ghost.bolt.database.entity.GenreEntity
+import com.ghost.bolt.database.entity.KeywordEntity
 import com.ghost.bolt.models.MediaCardUiModel
 import com.ghost.bolt.ui.components.DynamicThemeFromImage
 import com.ghost.bolt.ui.components.ErrorScreen
@@ -28,7 +30,8 @@ fun DetailedMediaScreen(
     onBackClick: () -> Unit,
     onCastClick: (Int) -> Unit,
     onMediaClick: (media: MediaCardUiModel) -> Unit,
-    onGenreClick: (Int, String) -> Unit
+    onGenreClick: (GenreEntity) -> Unit,
+    onKeywordClick: (KeywordEntity) -> Unit
 ) {
     LaunchedEffect(media) {
         Timber.tag("Detail Screen").v("Loading media for: $media")
@@ -53,7 +56,8 @@ fun DetailedMediaScreen(
                 onBackClick = onBackClick,
                 onCastClick = onCastClick,
                 onMediaClick = onMediaClick,
-                onGenreClick = onGenreClick
+                onGenreClick = onGenreClick,
+                onKeywordClick = onKeywordClick
             )
         }
     }
@@ -70,7 +74,8 @@ private fun DetailedMediaContent(
     onBackClick: () -> Unit,
     onCastClick: (Int) -> Unit,
     onMediaClick: (media: MediaCardUiModel) -> Unit,
-    onGenreClick: (Int, String) -> Unit
+    onGenreClick: (GenreEntity) -> Unit,
+    onKeywordClick: (KeywordEntity) -> Unit
 ) {
 
     PullToRefreshBox(
@@ -93,6 +98,7 @@ private fun DetailedMediaContent(
                     onCastClick = onCastClick,
                     onMediaClick = onMediaClick,
                     onGenreClick = onGenreClick,
+                    onKeywordClick = onKeywordClick,
                 )
             }
 
