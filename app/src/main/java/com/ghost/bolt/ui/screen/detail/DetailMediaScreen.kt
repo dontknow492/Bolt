@@ -11,10 +11,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ghost.bolt.models.MediaCardUiModel
 import com.ghost.bolt.ui.components.DynamicThemeFromImage
 import com.ghost.bolt.ui.components.ErrorScreen
 import com.ghost.bolt.ui.viewModel.DetailUiState
 import com.ghost.bolt.ui.viewModel.DetailViewModel
+
 import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -22,24 +24,21 @@ import timber.log.Timber
 fun DetailedMediaScreen(
     modifier: Modifier = Modifier,
     viewModel: DetailViewModel = hiltViewModel(),
-    mediaId: Int,
-    title: String?,
-    coverPath: String?,
-    backdropPath: String?,
+    media: MediaCardUiModel,
     onBackClick: () -> Unit,
     onCastClick: (Int) -> Unit,
-    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
+    onMediaClick: (media: MediaCardUiModel) -> Unit,
     onGenreClick: (Int, String) -> Unit
 ) {
-    LaunchedEffect(mediaId) {
-        Timber.tag("Detail Screen").v("Loading media id: $mediaId")
-        viewModel.loadDetailData(mediaId, coverPath, title, backdropPath)
+    LaunchedEffect(media) {
+        Timber.tag("Detail Screen").v("Loading media for: $media")
+        viewModel.loadDetailData(media)
     }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     DynamicThemeFromImage(
-        imageUrl = coverPath
+        imageUrl = media.posterUrl
     ) {
         Surface(
             modifier = modifier.fillMaxSize(),
@@ -47,13 +46,10 @@ fun DetailedMediaScreen(
         ) {
             DetailedMediaContent(
                 uiState = uiState,
+                media = media,
                 isRefreshing = isRefreshing,
                 onRefresh = viewModel::refreshData,
                 onRetry = viewModel::loadDetailData,
-                mediaId = mediaId,
-                title = title,
-                coverPath = coverPath,
-                backdropPath = backdropPath,
                 onBackClick = onBackClick,
                 onCastClick = onCastClick,
                 onMediaClick = onMediaClick,
@@ -67,22 +63,19 @@ fun DetailedMediaScreen(
 private fun DetailedMediaContent(
     modifier: Modifier = Modifier,
     uiState: DetailUiState,
+    media: MediaCardUiModel,
     isRefreshing: Boolean,
-    onRefresh: (Int) -> Unit,
-    onRetry: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
-    mediaId: Int,
-    title: String?,
-    coverPath: String?,
-    backdropPath: String?,
+    onRefresh: (media: MediaCardUiModel) -> Unit,
+    onRetry: (MediaCardUiModel) -> Unit,
     onBackClick: () -> Unit,
     onCastClick: (Int) -> Unit,
-    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
+    onMediaClick: (media: MediaCardUiModel) -> Unit,
     onGenreClick: (Int, String) -> Unit
 ) {
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
-        onRefresh = { onRefresh(mediaId) },
+        onRefresh = { onRefresh(media) },
         modifier = modifier
     ) {
         when (val state = uiState) {
@@ -90,12 +83,7 @@ private fun DetailedMediaContent(
                 ErrorScreen(
                     message = state.message,
                     onRetry = {
-                        onRetry(
-                            mediaId,
-                            coverPath,
-                            title,
-                            backdropPath
-                        )
+                        onRetry(media)
                     })
             }
 

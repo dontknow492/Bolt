@@ -21,8 +21,8 @@ interface MediaDao {
     // --- 1. HOME SCREEN (Paging) ---
     // Fetches movies for a horizontal row (e.g. Popular), ordered by API position
 
-    @Query("SELECT * FROM Media WHERE id = :mediaId")
-    suspend fun getMedia(mediaId: Int): MediaEntity?
+    @Query("SELECT * FROM Media WHERE id = :mediaId AND media_type = :mediaType AND media_source = :mediaSource")
+    suspend fun getMedia(mediaId: Int, mediaType: String, mediaSource: String): MediaEntity?
 
     @Transaction
     @Query(
@@ -44,8 +44,8 @@ interface MediaDao {
     // --- 2. DETAIL PAGE ---
     // Fetches everything (Cast, Genres, etc.) in one transaction
     @Transaction
-    @Query("SELECT * FROM Media WHERE id = :mediaId")
-    fun getMediaDetailFlow(mediaId: Int): Flow<MediaDetail?>
+    @Query("SELECT * FROM Media WHERE id = :mediaId AND media_type = :mediaType AND media_source = :mediaSource")
+    fun getMediaDetailFlow(mediaId: Int, mediaType: String, mediaSource: String): Flow<MediaDetail?>
 
     // --- 3. SEARCH & DISCOVERY (Complex) ---
     // Use this for simple name search

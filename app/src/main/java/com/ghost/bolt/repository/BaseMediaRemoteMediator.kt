@@ -64,9 +64,12 @@ abstract class BaseMediaRemoteMediator(
                 LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
                 LoadType.APPEND -> {
                     val remoteKey = db.remoteKeysDao().getRemoteKeyByLabel(remoteKeyLabel)
-                    remoteKey?.nextPage
-                        ?: return MediatorResult.Success(endOfPaginationReached = remoteKey != null)
+                        ?: return MediatorResult.Success(endOfPaginationReached = true)
+
+                    remoteKey.nextPage
+                        ?: return MediatorResult.Success(endOfPaginationReached = true)
                 }
+
             }
 
             Timber.d("[%s] Loading page %d", remoteKeyLabel, page)

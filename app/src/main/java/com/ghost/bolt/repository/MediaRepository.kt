@@ -6,8 +6,9 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.room.withTransaction
-import com.ghost.bolt.api.TmdbApi
+import com.ghost.bolt.api.tmdb.TmdbApi
 import com.ghost.bolt.database.AppDatabase
+import com.ghost.bolt.database.Converters
 import com.ghost.bolt.database.entity.MediaEntity
 import com.ghost.bolt.enums.AppCategory
 import com.ghost.bolt.enums.AppMediaType
@@ -36,6 +37,7 @@ class MediaRepository @Inject constructor(
     private val db: AppDatabase,
     private val tmdbApi: TmdbApi
 ) {
+    private val converter: Converters = Converters()
     private val mediaDao = db.mediaDao()
     private val castDao = db.castDao()
     private val categoryDao = db.categoryDao()
@@ -47,9 +49,10 @@ class MediaRepository @Inject constructor(
 
     fun getCategoryMediaList(
         category: AppCategory,
-        mediaType: AppMediaType
+        mediaType: AppMediaType,
+        mediaSource: MediaSource,
     ): Flow<PagingData<MediaEntity>> {
-        return createPager(category, mediaType)
+        return createPager(category, mediaType, mediaSource)
     }
 
 
@@ -57,15 +60,15 @@ class MediaRepository @Inject constructor(
     @OptIn(ExperimentalPagingApi::class)
     private fun createPager(
         category: AppCategory,
-        mediaType: AppMediaType
+        mediaType: AppMediaType,
+        mediaSource: MediaSource,
     ): Flow<PagingData<MediaEntity>> {
 
         val categoryId = category.id
 
-        return when (mediaType) {
+        return when (mediaSource) {
 
-            AppMediaType.MOVIE,
-            AppMediaType.TV -> {
+            MediaSource.TMDB -> {
 
                 val tmdbMediaType = mediaType.toTmdbMediaType()
                     ?: throw InvalidMediaTypeException(MediaProvider.TMDB, mediaType)
@@ -76,12 +79,11 @@ class MediaRepository @Inject constructor(
                 Pager(
                     config = PagingConfig(
                         pageSize = 20,
-                        enablePlaceholders = true,
-                        // 2. Reduce initial load. We only need 1 page (20 items) to fill a horizontal row.
-                        initialLoadSize = 20,
-
-                        // 3. Lower prefetch distance.
-                        prefetchDistance = 5
+                        // Fix: Disable placeholders to prevent key-generation from triggering loads
+                        enablePlaceholders = false,
+                        // Fix: Load 3x pages initially to fill screen and prevent immediate 'append'
+                        initialLoadSize = 60,
+                        prefetchDistance = 10
                     ),
                     remoteMediator = TmdbRemoteMediator(
                         db = db,
@@ -91,42 +93,79 @@ class MediaRepository @Inject constructor(
                         mediaType = tmdbMediaType
                     ),
                     pagingSourceFactory = {
-                        mediaDao.getMediaByCategoryId(categoryId, mediaType.name)
+                        mediaDao.getMediaByCategoryId(
+                            categoryId = categoryId,
+                            mediaType = mediaType.name
+                        )
                     }
                 ).flow
             }
 
-            AppMediaType.ANIME -> {
-                throw InvalidMediaTypeException(MediaProvider.TMDB, mediaType)
+            MediaSource.ANILIST -> {
+                TODO("AniList pager not implemented yet")
+            }
+
+            else -> {
+                throw UnsupportedOperationException("Unsupported media source: $mediaSource")
             }
         }
     }
 
+    fun refreshCategory(category: AppCategory, mediaType: AppMediaType, mediaSource: MediaSource) {
+        TODO("Not yet implemented")
+    }
+
+
     /**
      * Fetches everything for a movie in ONE network call and updates the DB.
      */
-    suspend fun refreshMediaDetail(mediaId: Int) = withContext(Dispatchers.IO) {
+    suspend fun refreshMediaDetail(
+        mediaId: Int,
+        mediaType: AppMediaType,
+        mediaSource: MediaSource
+    ) = withContext(Dispatchers.IO) {
         Timber.i("Refreshing media detail for ID: %d", mediaId)
         try {
             // 1. One API call to get Movie + Cast + Recommendations
-            val mediaEntity = mediaDao.getMedia(mediaId)
+            val mediaEntity = mediaDao.getMedia(mediaId, mediaType.name, mediaSource.name)
                 ?: throw IllegalArgumentException("Media not found")
 
             when (val source = mediaEntity.mediaSource) {
                 MediaSource.TMDB -> {
-                    val networkMovie = tmdbApi.getMovie(
-                        movieId = mediaId,
-                        appendToResponse = TmdbQueryUtils.buildAppendToResponse(
-                            AppendToResponseItem.CREDITS,
-                            AppendToResponseItem.RECOMMENDATIONS,
-                            AppendToResponseItem.VIDEOS
-                        )
-                    )
+                    val decomposition = when (mediaEntity.mediaType) {
+                        AppMediaType.MOVIE -> {
+                            val details = tmdbApi.getMovieDetails(
+                                id = mediaId,
+                                appendToResponse = TmdbQueryUtils.buildAppendToResponse(
+                                    AppendToResponseItem.CREDITS,
+                                    AppendToResponseItem.RECOMMENDATIONS,
+                                    AppendToResponseItem.VIDEOS,
+                                    AppendToResponseItem.SIMILAR,
+                                )
+                            )
+                            details.toDecomposition(converter)
+                        }
+
+                        AppMediaType.TV -> {
+                            val details = tmdbApi.getTvDetails(
+                                id = mediaId,
+                                appendToResponse = TmdbQueryUtils.buildAppendToResponse(
+                                    AppendToResponseItem.CREDITS,
+                                    AppendToResponseItem.RECOMMENDATIONS,
+                                    AppendToResponseItem.SIMILAR,
+                                    AppendToResponseItem.VIDEOS
+                                )
+                            )
+                            details.toDecomposition(converter)
+                        }
+
+                        AppMediaType.ANIME -> TODO()
+                    }
 
                     // 2. Wrap everything in a transaction for data integrity
                     db.withTransaction {
                         // A. Update the core movie data (including budget, runtime, etc.)
-                        val coreEntity = networkMovie.toDecomposition()
+                        val coreEntity = decomposition
                         decompositionDao.insertDecomposition(coreEntity)
 
                     }
@@ -148,25 +187,30 @@ class MediaRepository @Inject constructor(
      * This allows the UI to show cached data immediately and update automatically
      * when the network refresh completes.
      */
-    suspend fun getUiMediaDetail(mediaId: Int): Flow<UiMediaDetail?> {
+    suspend fun getUiMediaDetail(
+        mediaId: Int,
+        mediaType: AppMediaType,
+        mediaSource: MediaSource
+    ): Flow<UiMediaDetail?> {
         try {
-            return mediaDao.getMediaDetailFlow(mediaId).map { detail ->
-                if (detail == null) return@map null
+            return mediaDao.getMediaDetailFlow(mediaId, mediaType.name, mediaSource.name)
+                .map { detail ->
+                    if (detail == null) return@map null
 
-                // We fetch the metadata links "on demand" whenever the main detail updates.
-                // Note: Running suspend functions inside a Flow map requires some care,
-                // usually better to fetch these eagerly or combine flows.
-                // For simplicity, we can fetch them here if we trust the DB speed,
-                // OR better yet, expose them as Flows from the DAO and combine them.
+                    // We fetch the metadata links "on demand" whenever the main detail updates.
+                    // Note: Running suspend functions inside a Flow map requires some care,
+                    // usually better to fetch these eagerly or combine flows.
+                    // For simplicity, we can fetch them here if we trust the DB speed,
+                    // OR better yet, expose them as Flows from the DAO and combine them.
 
-                // A simpler, synchronous approach for the DAO methods would be better here,
-                // OR we just execute the queries:
-                val castLinks = mediaDao.getCastCrossRefs(mediaId)
-                val recLinks = mediaDao.getRecommendationCrossRefs(mediaId)
-                val simLinks = mediaDao.getSimilarCrossRefs(mediaId)
+                    // A simpler, synchronous approach for the DAO methods would be better here,
+                    // OR we just execute the queries:
+                    val castLinks = mediaDao.getCastCrossRefs(mediaId)
+                    val recLinks = mediaDao.getRecommendationCrossRefs(mediaId)
+                    val simLinks = mediaDao.getSimilarCrossRefs(mediaId)
 
-                detail.toUiMediaDetail(castLinks, recLinks, simLinks)
-            }
+                    detail.toUiMediaDetail(castLinks, recLinks, simLinks)
+                }
                 .flowOn(Dispatchers.IO)
         } catch (e: Exception) {
             Timber.e(e, "Error getting media detail")
@@ -175,5 +219,6 @@ class MediaRepository @Inject constructor(
 
         // Ensure DB work happens on IO thread
     }
+
 
 }

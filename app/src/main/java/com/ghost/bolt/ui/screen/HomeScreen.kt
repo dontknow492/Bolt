@@ -41,15 +41,17 @@ import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.ghost.bolt.database.entity.MediaEntity
+import com.ghost.bolt.enums.AppCategory
 import com.ghost.bolt.enums.AppMediaType
+import com.ghost.bolt.enums.MediaSource
+import com.ghost.bolt.models.MediaCardUiModel
 import com.ghost.bolt.ui.components.card.CoverVariant
-import com.ghost.bolt.ui.components.card.MediaCard
 import com.ghost.bolt.ui.components.card.MediaCardShimmer
 import com.ghost.bolt.ui.components.card.MediaCardStyle
+import com.ghost.bolt.ui.components.card.MediaEntityCard
 import com.ghost.bolt.ui.viewModel.HomeUiData
 import com.ghost.bolt.ui.viewModel.HomeUiState
 import com.ghost.bolt.ui.viewModel.HomeViewModel
-import com.ghost.bolt.utils.TmdbConfig
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -58,8 +60,10 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
-    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
+    onMediaClick: (media: MediaCardUiModel) -> Unit,
     mediaType: AppMediaType,
+    mediaSource: MediaSource,
+    onSeeAllClick: (category: AppCategory, mediaType: AppMediaType, mediaSource: MediaSource) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val homeUiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -77,7 +81,8 @@ fun HomeScreen(
             HomeSuccessView(
                 modifier = modifier.fillMaxSize(),
                 data = state.data,
-                onMediaClick = onMediaClick
+                onMediaClick = onMediaClick,
+                onSeeAllClick = onSeeAllClick,
             )
         }
 
@@ -85,7 +90,7 @@ fun HomeScreen(
 
     LaunchedEffect(mediaType) {
         Timber.tag("Home Screen").v("Loading media type: $mediaType")
-        viewModel.load(mediaType)
+        viewModel.load(mediaType, mediaSource)
     }
 }
 
@@ -93,7 +98,8 @@ fun HomeScreen(
 fun HomeSuccessView(
     modifier: Modifier = Modifier,
     data: HomeUiData,
-    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
+    onMediaClick: (media: MediaCardUiModel) -> Unit,
+    onSeeAllClick: (category: AppCategory, mediaType: AppMediaType, mediaSource: MediaSource) -> Unit,
 ) {
     val topRated = data.topRated.collectAsLazyPagingItems()
     val trending = data.trending.collectAsLazyPagingItems()
@@ -113,7 +119,13 @@ fun HomeSuccessView(
                         data = trending,
                         mediaStyle = MediaCardStyle.Cover(CoverVariant.NORMAL),
                         animatedContentScope = this@AnimatedVisibility,
-                        onSeeAllClick = { },
+                        onSeeAllClick = {
+                            onSeeAllClick(
+                                AppCategory.TRENDING,
+                                data.mediaType,
+                                data.mediaSource
+                            )
+                        },
                         onMediaClick = onMediaClick
                     )
                 }
@@ -124,7 +136,13 @@ fun HomeSuccessView(
                         data = popular,
                         mediaStyle = MediaCardStyle.Cover(CoverVariant.NORMAL),
                         animatedContentScope = this@AnimatedVisibility,
-                        onSeeAllClick = { },
+                        onSeeAllClick = {
+                            onSeeAllClick(
+                                AppCategory.POPULAR,
+                                data.mediaType,
+                                data.mediaSource
+                            )
+                        },
                         onMediaClick = onMediaClick
                     )
                 }
@@ -135,7 +153,13 @@ fun HomeSuccessView(
                         data = upcoming,
                         mediaStyle = MediaCardStyle.Cover(CoverVariant.NORMAL),
                         animatedContentScope = this@AnimatedVisibility,
-                        onSeeAllClick = { },
+                        onSeeAllClick = {
+                            onSeeAllClick(
+                                AppCategory.UPCOMING,
+                                data.mediaType,
+                                data.mediaSource
+                            )
+                        },
                         onMediaClick = onMediaClick
                     )
                 }
@@ -153,12 +177,13 @@ fun HomeSuccessView(
                     key = { index -> topRated[index]?.id ?: index }) { index ->
                     val entity = topRated[index]
                     if (entity != null) {
-                        Entity(
+                        MediaEntityCard(
                             entity = entity,
                             mediaStyle = MediaCardStyle.List,
                             modifier = Modifier,
                             onMediaClick = onMediaClick,
-                            animatedContentScope = this@AnimatedVisibility
+                            animatedContentScope = this@AnimatedVisibility,
+                            sharedTransitionScope = this@SharedTransitionLayout
                         )
                     }
 
@@ -172,15 +197,16 @@ fun HomeSuccessView(
 
 
 @Composable
-fun SharedTransitionScope.MediaHorizontalSection(
+fun MediaHorizontalSection(
     modifier: Modifier = Modifier,
     title: String,
     data: LazyPagingItems<MediaEntity>,
     mediaStyle: MediaCardStyle = MediaCardStyle.Cover(CoverVariant.NORMAL),
-    animatedContentScope: AnimatedVisibilityScope,
+    animatedContentScope: AnimatedVisibilityScope? = null,
+    sharedTransitionScope: SharedTransitionScope? = null,
     onSeeAllClick: () -> Unit,
     onRetry: () -> Unit = { data.retry() },
-    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
+    onMediaClick: (media: MediaCardUiModel) -> Unit,
 ) {
 
     val refreshState = data.loadState.refresh
@@ -260,12 +286,13 @@ fun SharedTransitionScope.MediaHorizontalSection(
                         val entity = data[index]
 
                         if (entity != null) {
-                            Entity(
+                            MediaEntityCard(
                                 entity = entity,
                                 mediaStyle = mediaStyle,
                                 modifier = Modifier,
                                 onMediaClick = onMediaClick,
-                                animatedContentScope = animatedContentScope
+                                animatedContentScope = animatedContentScope,
+                                sharedTransitionScope = sharedTransitionScope
                             )
                         }
                     }
@@ -275,32 +302,6 @@ fun SharedTransitionScope.MediaHorizontalSection(
     }
 }
 
-@Composable
-fun SharedTransitionScope.Entity(
-    entity: MediaEntity,
-    mediaStyle: MediaCardStyle,
-    modifier: Modifier = Modifier,
-    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
-    animatedContentScope: AnimatedVisibilityScope
-) {
-    val posterUrl = TmdbConfig.getPosterUrl(entity.posterPath, TmdbConfig.TMDbPosterSize.W342)
-    val backdropUrl = TmdbConfig.getBackdropUrl(entity.backdropPath)
-    MediaCard(
-        modifier = modifier,
-        mediaId = entity.id,
-        title = entity.title,
-        posterUrl = posterUrl,
-        backdropUrl = backdropUrl,
-        voteAverage = entity.voteAverage,
-        voteCount = entity.voteCount,
-        overview = entity.overview,
-        releaseDate = formatTimestampToDate(entity.releaseDate),
-        mediaType = entity.mediaType,
-        style = mediaStyle,
-        onMediaClick = onMediaClick,
-        animatedVisibilityScope = animatedContentScope,
-    )
-}
 
 @Composable
 fun SectionHeader(

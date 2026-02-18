@@ -1,4 +1,4 @@
-package com.ghost.bolt.api.response
+package com.ghost.bolt.api.tmdb.response.fields
 
 import kotlinx.serialization.Serializable
 

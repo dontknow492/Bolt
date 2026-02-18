@@ -23,6 +23,7 @@ data class UiMediaDetail(
     val recommendations: List<UiRelatedMedia>,
     val similar: List<UiRelatedMedia>,
 
+
     // Production Info
     val productionCompanies: List<String> = emptyList(),
     val productionCountries: List<String> = emptyList(),

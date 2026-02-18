@@ -1,6 +1,6 @@
 package com.ghost.bolt.ui.screen.detail
 
-import android.net.Uri
+
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +32,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil3.Uri
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.transformations
@@ -152,20 +153,26 @@ private fun DetailScreenShimmer(modifier: Modifier = Modifier) {
 
         // Metadata Row Skeleton (Rating, Year, Time)
         Row {
-            Box(Modifier
-                .size(60.dp, 20.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .shimmerEffect())
+            Box(
+                Modifier
+                    .size(60.dp, 20.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerEffect()
+            )
             Spacer(modifier = Modifier.width(12.dp))
-            Box(Modifier
-                .size(40.dp, 20.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .shimmerEffect())
+            Box(
+                Modifier
+                    .size(40.dp, 20.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerEffect()
+            )
             Spacer(modifier = Modifier.width(12.dp))
-            Box(Modifier
-                .size(50.dp, 20.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .shimmerEffect())
+            Box(
+                Modifier
+                    .size(50.dp, 20.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerEffect()
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))

@@ -61,12 +61,13 @@ import com.ghost.bolt.database.entity.MediaDetail
 import com.ghost.bolt.database.entity.MediaEntity
 import com.ghost.bolt.enums.AppMediaType
 import com.ghost.bolt.enums.MediaSource
+import com.ghost.bolt.models.MediaCardUiModel
 import com.ghost.bolt.models.UiCastMember
 import com.ghost.bolt.models.UiMediaDetail
 import com.ghost.bolt.models.UiRelatedMedia
 import com.ghost.bolt.ui.components.card.CoverVariant
 import com.ghost.bolt.ui.components.card.MediaCardStyle
-import com.ghost.bolt.ui.screen.Entity
+import com.ghost.bolt.ui.components.card.MediaEntityCard
 import com.ghost.bolt.ui.theme.BoltTheme
 import com.ghost.bolt.utils.TmdbConfig
 import com.ghost.bolt.utils.mapper.toUiMediaDetail
@@ -77,7 +78,7 @@ import java.time.ZoneId
 fun DetailSuccessContent(
     detail: UiMediaDetail,
     onCastClick: (Int) -> Unit,
-    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
+    onMediaClick: (media: MediaCardUiModel) -> Unit,
     onGenreClick: (Int, String) -> Unit
 ) {
     val media = detail.media
@@ -130,7 +131,8 @@ private fun DetailHeaderSection(media: MediaEntity) {
     ) {
 
         AsyncImage(
-            model = TmdbConfig.getBackdropUrl(media.backdropPath ?: media.posterPath),
+            model = TmdbConfig.getPosterUrl(media.posterPath)
+                ?: TmdbConfig.getBackdropUrl(media.posterPath),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
@@ -239,7 +241,7 @@ fun ExternalLinksSection(modifier: Modifier = Modifier, media: MediaEntity) {
         ExternalLinkButton(
             painter = painterResource(R.drawable.link),
             label = "TMDB",
-            url = "https://www.themoviedb.org/${media.mediaType?.name?.lowercase() ?: "movie"}/${media.id}"
+            url = TmdbConfig.getTmdbUrl(media.mediaType, media.id)
         )
 
         if (!media.homepage.isNullOrBlank()) {
@@ -323,7 +325,7 @@ private fun CastSection(
 @Composable
 private fun RecommendationSection(
     recommendations: List<UiRelatedMedia>,
-    onMediaClick: (Int, String?, String?, String?) -> Unit
+    onMediaClick: (MediaCardUiModel) -> Unit
 ) {
     if (recommendations.isEmpty()) return
 
@@ -335,11 +337,10 @@ private fun RecommendationSection(
         items(recommendations) { rec ->
             SharedTransitionLayout {
                 AnimatedVisibility(true) {
-                    Entity(
+                    MediaEntityCard(
                         entity = rec.media,
                         mediaStyle = MediaCardStyle.Cover(CoverVariant.NORMAL),
                         onMediaClick = onMediaClick,
-                        animatedContentScope = this@AnimatedVisibility
                     )
                 }
 
@@ -526,7 +527,7 @@ private fun SuccessContentPreview() {
         DetailSuccessContent(
             detail = sampleDetail.toUiMediaDetail(emptyList(), emptyList(), emptyList()),
             onCastClick = {},
-            onMediaClick = { _, _, _, _ -> },
+            onMediaClick = { },
             onGenreClick = { _, _ -> }
         )
     }

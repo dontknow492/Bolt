@@ -1,6 +1,7 @@
 package com.ghost.bolt.utils
 
 import android.net.Uri
+import com.ghost.bolt.enums.AppMediaType
 
 object TmdbConfig {
 
@@ -27,6 +28,10 @@ object TmdbConfig {
         override fun toString(): String {
             return "$sizeCode - $description"
         }
+    }
+
+    fun getTmdbUrl(mediaType: AppMediaType, id: Int): String {
+        return "https://www.themoviedb.org/${mediaType.name.lowercase()}/${id}"
     }
 
     // --- Backdrop URL ---

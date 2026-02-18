@@ -7,6 +7,7 @@ import androidx.paging.cachedIn
 import com.ghost.bolt.database.entity.MediaEntity
 import com.ghost.bolt.enums.AppCategory
 import com.ghost.bolt.enums.AppMediaType
+import com.ghost.bolt.enums.MediaSource
 import com.ghost.bolt.repository.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -21,6 +22,8 @@ data class HomeUiData(
     val topRated: Flow<PagingData<MediaEntity>>,
     val trending: Flow<PagingData<MediaEntity>>,
     val upcoming: Flow<PagingData<MediaEntity>>,
+    val mediaType: AppMediaType,
+    val mediaSource: MediaSource,
 )
 
 sealed class HomeUiState {
@@ -39,7 +42,7 @@ class HomeViewModel @Inject constructor(
     private var mediaType: AppMediaType? = null
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    fun load(mediaType: AppMediaType) {
+    fun load(mediaType: AppMediaType, mediaSource: MediaSource) {
         if (this.mediaType == mediaType && _uiState.value is HomeUiState.Success) return
 
         try {
@@ -47,20 +50,22 @@ class HomeViewModel @Inject constructor(
                 HomeUiState.Success(
                     HomeUiData(
                         popular = repository
-                            .getCategoryMediaList(AppCategory.POPULAR, mediaType)
+                            .getCategoryMediaList(AppCategory.POPULAR, mediaType, mediaSource)
                             .cachedIn(viewModelScope),
 
                         topRated = repository
-                            .getCategoryMediaList(AppCategory.TOP_RATED, mediaType)
+                            .getCategoryMediaList(AppCategory.TOP_RATED, mediaType, mediaSource)
                             .cachedIn(viewModelScope),
 
                         trending = repository
-                            .getCategoryMediaList(AppCategory.TRENDING, mediaType)
+                            .getCategoryMediaList(AppCategory.TRENDING, mediaType, mediaSource)
                             .cachedIn(viewModelScope),
 
                         upcoming = repository
-                            .getCategoryMediaList(AppCategory.UPCOMING, mediaType)
+                            .getCategoryMediaList(AppCategory.UPCOMING, mediaType, mediaSource)
                             .cachedIn(viewModelScope),
+                        mediaType = mediaType,
+                        mediaSource = mediaSource
                     )
                 )
             }

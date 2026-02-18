@@ -18,78 +18,102 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.ghost.bolt.database.entity.MediaEntity
 import com.ghost.bolt.enums.AppMediaType
+import com.ghost.bolt.models.MediaCardUiModel
+import com.ghost.bolt.utils.mapper.toMediaCardUiModel
+import timber.log.Timber
+
 
 @Composable
-fun SharedTransitionScope.MediaCard(
+fun Modifier.optionalSharedElement(
+    key: String,
+    sharedScope: SharedTransitionScope?,
+    animatedScope: AnimatedVisibilityScope?
+): Modifier {
+    return if (sharedScope != null && animatedScope != null) {
+        with(sharedScope) {
+            this@optionalSharedElement.sharedElement(
+                rememberSharedContentState(key),
+                animatedScope
+            )
+        }
+    } else {
+        this
+    }
+}
+
+
+@Composable
+fun MediaEntityCard(
+    entity: MediaEntity,
+    mediaStyle: MediaCardStyle,
     modifier: Modifier = Modifier,
-    mediaId: Int,
-    title: String,
-    posterUrl: String?,
-    backdropUrl: String?,
-    voteAverage: Float?,
-    voteCount: Int? = null, // New
-    overview: String?,
-    releaseDate: String?,
-    mediaType: AppMediaType? = null, // New
-    style: MediaCardStyle,
-    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
-    animatedVisibilityScope: AnimatedVisibilityScope,
+    onMediaClick: (MediaCardUiModel) -> Unit,
+    animatedContentScope: AnimatedVisibilityScope? = null,
+    sharedTransitionScope: SharedTransitionScope? = null
 ) {
-    // AnimatedContent handles the state transition automatically
+    Timber.tag("Home Screen").v("Rendering entity: ${entity.title}")
+    val uiEntity = entity.toMediaCardUiModel()
+    MediaCard(
+        modifier = modifier,
+        media = uiEntity,
+        style = mediaStyle,
+        onClick = { onMediaClick(uiEntity) },
+        sharedTransitionScope = sharedTransitionScope,
+        animatedVisibilityScope = animatedContentScope
+    )
+}
+
+
+@Composable
+fun MediaCard(
+    media: MediaCardUiModel,
+    style: MediaCardStyle,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
+) {
+
     AnimatedContent(
         targetState = style,
         transitionSpec = {
-            // A smooth crossfade transition
-            fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
+            fadeIn(tween(300)) togetherWith fadeOut(tween(300))
         },
         label = "MediaCardTransition"
     ) { targetStyle ->
+
         when (targetStyle) {
-            is MediaCardStyle.List -> {
+
+            MediaCardStyle.List -> {
                 MediaListView(
-                    mediaId = mediaId,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    title = title,
-                    posterUrl = posterUrl,
-                    backdropPath = backdropUrl,
-                    voteAverage = voteAverage,
-                    overview = overview,
-                    onMediaClick = onMediaClick,
-                    releaseDate = releaseDate,
-                    modifier = modifier
+                    media = media,
+                    onClick = onClick,
+                    modifier = modifier,
+                    sharedScope = sharedTransitionScope,
+                    animatedScope = animatedVisibilityScope
+                )
+            }
+
+            MediaCardStyle.Detailed -> {
+                MediaDetailedView(
+                    media = media,
+                    onClick = onClick,
+                    modifier = modifier,
+                    sharedScope = sharedTransitionScope,
+                    animatedScope = animatedVisibilityScope
                 )
             }
 
             is MediaCardStyle.Cover -> {
-                // Passes the specific variant (Compact, Minimal, etc.) down
                 MediaCoverView(
-                    mediaId = mediaId,
-                    title = title,
-                    posterUrl = posterUrl,
-                    backdropUrl = backdropUrl,
+                    media = media,
                     variant = targetStyle.variant,
+                    onClick = onClick,
                     modifier = modifier,
-                    onMediaClick = onMediaClick,
-                    animatedVisibilityScope = animatedVisibilityScope
-                )
-            }
-
-            is MediaCardStyle.Detailed -> {
-                // Call the new Detailed view here!
-                MediaDetailedView(
-                    mediaId = mediaId,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    title = title,
-                    posterUrl = posterUrl,
-                    backdropUrl = backdropUrl,
-                    voteAverage = voteAverage,
-                    voteCount = voteCount,
-                    overview = overview,
-                    releaseDate = releaseDate,
-                    mediaType = mediaType,
-                    onMediaClick = onMediaClick,
-                    modifier = modifier
+                    sharedScope = sharedTransitionScope,
+                    animatedScope = animatedVisibilityScope
                 )
             }
         }
@@ -102,15 +126,11 @@ fun SharedTransitionScope.MediaCard(
 @Composable
 private fun MediaCardPreview() {
     // Sample data
-    val sampleMediaId = 1
-    val sampleTitle = "Inception"
-    val samplePosterUrl = "https://image.tmdb.org/t/p/w500/sample_image.jpg"
-    val sampleVoteAverage = 8.8f
-    val sampleVoteCount = 2000
-    val sampleOverview =
-        "A thief who steals corporate secrets through the use of dream-sharing technology."
-    val sampleReleaseDate = "2010-07-16"
-    val sampleMediaType = AppMediaType.MOVIE
+    "Inception"
+    "https://image.tmdb.org/t/p/w500/sample_image.jpg"
+    "A thief who steals corporate secrets through the use of dream-sharing technology."
+    "2010-07-16"
+    AppMediaType.MOVIE
     MediaCardStyle.Detailed
 
     val styles = listOf(
@@ -130,20 +150,20 @@ private fun MediaCardPreview() {
             // 3. Now 'this' is the AnimatedVisibilityScope you need!
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 styles.forEach { style ->
-                    MediaCard(
-                        mediaId = sampleMediaId,
-                        title = sampleTitle,
-                        onMediaClick = { _, _, _, _ -> },
-                        posterUrl = samplePosterUrl,
-                        backdropUrl = samplePosterUrl,
-                        voteAverage = sampleVoteAverage,
-                        voteCount = sampleVoteCount,
-                        overview = sampleOverview,
-                        releaseDate = sampleReleaseDate,
-                        mediaType = sampleMediaType,
-                        style = style,
-                        animatedVisibilityScope = this@AnimatedVisibility // Pass the scope here
-                    )
+//                    MediaCard(
+//                        mediaId = sampleMediaId,
+//                        title = sampleTitle,
+//                        onMediaClick = { _, _, _, _, _, _ -> },
+//                        posterUrl = samplePosterUrl,
+//                        backdropUrl = samplePosterUrl,
+//                        voteAverage = sampleVoteAverage,
+//                        voteCount = sampleVoteCount,
+//                        overview = sampleOverview,
+//                        releaseDate = sampleReleaseDate,
+//                        mediaType = sampleMediaType,
+//                        style = style,
+//                        animatedVisibilityScope = this@AnimatedVisibility // Pass the scope here
+//                    )
                     HorizontalDivider(modifier = Modifier.width(2.dp))
                 }
             }

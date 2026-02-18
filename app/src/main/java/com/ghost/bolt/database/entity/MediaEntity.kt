@@ -40,16 +40,3 @@ data class MediaEntity(
     @ColumnInfo(name = "theme_color") val themeColor: Color?,
 )
 
-
-enum class TmdbBackdropSize(val sizeCode: String, val description: String) {
-    W300("w300", "Small backdrop"),
-    W780("w780", "Medium backdrop"),
-    W1280("w1280", "Large backdrop"),
-    ORIGINAL("original", "Full resolution backdrop");
-
-    override fun toString(): String {
-        return "$sizeCode - $description"
-    }
-}
-
-

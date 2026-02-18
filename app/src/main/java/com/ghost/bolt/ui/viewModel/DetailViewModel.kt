@@ -4,14 +4,15 @@ import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import coil3.toUri
 import com.ghost.bolt.R
+import com.ghost.bolt.models.MediaCardUiModel
 import com.ghost.bolt.models.UiMediaDetail
 import com.ghost.bolt.repository.MediaRepository
 import com.ghost.bolt.ui.components.loadImageBitmapFromUrl
 import com.ghost.bolt.ui.screen.detail.BackdropSource
 import com.ghost.bolt.ui.theme.SeedColor
 import com.ghost.bolt.utils.ThemeColorCache
-import com.ghost.bolt.utils.TmdbConfig
 import com.materialkolor.ktx.themeColor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -45,16 +46,18 @@ class DetailViewModel @Inject constructor(
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
 
-    fun loadDetailData(id: Int, coverPath: String?, title: String?, backdropPath: String?) {
+    fun loadDetailData(media: MediaCardUiModel) {
         Timber.tag("DetailViewModel")
-            .v("Loading detail data for ID: %d", id, coverPath, title, backdropPath)
-        if (coverPath != null) {
+            .v("Loading detail data for ID: %d", media.id, media.mediaType, media.mediaSource)
+        if (media.posterUrl != null) {
             _uiState.update {
-                DetailUiState.Loading(BackdropSource.Network(TmdbConfig.getBackdropUri(coverPath)))
+                DetailUiState.Loading(
+                    BackdropSource.Network(media.posterUrl.toUri())
+                )
             }
         }
         viewModelScope.launch {
-            repository.getUiMediaDetail(id)
+            repository.getUiMediaDetail(media.id, media.mediaType, media.mediaSource)
                 .onStart {
                     _uiState.value = DetailUiState.Loading()
                 }
@@ -77,10 +80,20 @@ class DetailViewModel @Inject constructor(
 
     }
 
-    fun refreshData(id: Int) {
-        viewModelScope.launch {
-            repository.refreshMediaDetail(id)
+    fun refreshData(media: MediaCardUiModel) {
+        try {
+            _isRefreshing.update { true }
+            viewModelScope.launch {
+                repository.refreshMediaDetail(media.id, media.mediaType, media.mediaSource)
+                _isRefreshing.update { false }
+            }
+        } catch (e: Exception) {
+            _isRefreshing.update { false }
+            Timber.e(
+                e, "Error refreshing data"
+            )
         }
+
     }
 }
 

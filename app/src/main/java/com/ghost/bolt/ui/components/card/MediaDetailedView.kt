@@ -22,157 +22,262 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ghost.bolt.enums.AppMediaType
+import com.ghost.bolt.enums.MediaSource
+import com.ghost.bolt.models.MediaCardUiModel
+import java.util.Locale
+
+/* ------------------------------------------------ */
+/* ---------------- UI MODEL ---------------------- */
+/* ------------------------------------------------ */
+
+data class MediaDetailedUiModel(
+    val id: Int,
+    val title: String,
+    val posterUrl: String?,
+    val backdropUrl: String?,
+    val voteAverage: Float?,
+    val voteCount: Int?,
+    val overview: String?,
+    val releaseDate: String?,
+    val mediaType: AppMediaType,
+    val mediaSource: MediaSource
+)
+
+/* ------------------------------------------------ */
+/* ---------------- MAIN CARD --------------------- */
+/* ------------------------------------------------ */
 
 @Composable
-fun SharedTransitionScope.MediaDetailedView(
-    mediaId: Int,
-    title: String,
-    posterUrl: String?,
-    backdropUrl: String?,
-    voteAverage: Float?,
-    voteCount: Int?, // Extra info
-    overview: String?,
-    releaseDate: String?,
-    mediaType: AppMediaType?, // Extra info (Movie / TV)
-    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
+internal fun MediaDetailedView(
+    media: MediaCardUiModel,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    animatedVisibilityScope: AnimatedVisibilityScope,
+    sharedScope: SharedTransitionScope? = null,
+    animatedScope: AnimatedVisibilityScope? = null,
 ) {
-    // We use an ElevatedCard to give it a slightly more premium, "detailed" feel
+
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
-            .height(180.dp), // Taller than the standard 140.dp list view
+            .height(180.dp),
         shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.elevatedCardElevation(4.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        onClick = { onMediaClick(mediaId, posterUrl, title, backdropUrl) },
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+        onClick = onClick
     ) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            // 1. Larger Poster on the Left
+
+        Row(Modifier.fillMaxSize()) {
+
+            // 🔥 Poster
             CoverImage(
-                title,
-                mediaId,
-                posterUrl,
-                animatedVisibilityScope,
+                title = media.title,
+                mediaId = media.id,
+                posterUrl = media.posterUrl,
+                sharedScope = sharedScope,
+                animatedScope = animatedScope,
                 clip = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp),
                 modifier = Modifier.weight(1f)
             )
 
-            // 2. Richer Metadata on the Right
-            Column(
+            // 🔥 Content
+            MediaDetailsContent(
+                media = media,
+                sharedScope = sharedScope,
+                animatedScope = animatedScope,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                // Title (Allows 2 lines in case of long titles)
+                    .padding(12.dp)
+            )
+        }
+    }
+}
+
+/* ------------------------------------------------ */
+/* ---------------- CONTENT ----------------------- */
+/* ------------------------------------------------ */
+
+@Composable
+private fun MediaDetailsContent(
+    media: MediaCardUiModel,
+    modifier: Modifier,
+    sharedScope: SharedTransitionScope?,
+    animatedScope: AnimatedVisibilityScope?
+) {
+
+    val year = remember(media.releaseDate) {
+        media.releaseDate?.take(4)
+    }
+
+    val ratingFormatted = remember(media.voteAverage) {
+        media.voteAverage
+            ?.takeIf { it > 0f }
+            ?.let { String.format(Locale.US, "%.1f", it) }
+    }
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+
+        // 🔥 Title
+        Text(
+            text = media.title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.optionalSharedElement(
+                key = "title_${media.id}",
+                sharedScope = sharedScope,
+                animatedScope = animatedScope
+            )
+        )
+
+        // 🔥 Type + Year
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+
+            MediaTypeChip(
+                media = media,
+                sharedScope = sharedScope,
+                animatedScope = animatedScope
+            )
+
+            year?.let {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.sharedElement(
-                        rememberSharedContentState(key = "title_$mediaId"),
-                        animatedVisibilityScope
-                    )
-                )
-
-                // Subtitle Row: Media Type & Year
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (mediaType != null) {
-                        Surface(
-                            shape = RoundedCornerShape(4.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer
-                        ) {
-                            Text(
-                                text = mediaType.name,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                                    .sharedElement(
-                                        rememberSharedContentState(key = "media_type_$mediaId"),
-                                        animatedVisibilityScope
-                                    )
-                            )
-                        }
-                    }
-
-                    if (!releaseDate.isNullOrBlank()) {
-                        Text(
-                            text = releaseDate.take(4),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.sharedElement(
-                                rememberSharedContentState(key = "release_date_$mediaId"),
-                                animatedVisibilityScope
-                            )
-                        )
-                    }
-                }
-
-                // Rating Row with Vote Count
-                if (voteAverage != null && voteAverage > 0f) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.sharedElement(
-                            rememberSharedContentState(key = "rating_$mediaId"),
-                            animatedVisibilityScope
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Rating",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .size(16.dp)
-
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = String.format("%.1f", voteAverage),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        if (voteCount != null && voteCount > 0) {
-                            Text(
-                                text = " ($voteCount votes)",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 4.dp)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Longer Overview (Allows 3-4 lines instead of 2)
-                Text(
-                    text = overview?.takeIf { it.isNotBlank() } ?: "No overview available.",
-                    style = MaterialTheme.typography.bodySmall,
+                    text = it,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 5,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.sharedElement(
-                        rememberSharedContentState(key = "overview_$mediaId"),
-                        animatedVisibilityScope
+                    modifier = Modifier.optionalSharedElement(
+                        key = "release_${media.id}",
+                        sharedScope = sharedScope,
+                        animatedScope = animatedScope
                     )
                 )
             }
         }
+
+        // 🔥 Rating
+        ratingFormatted?.let {
+            RatingRow(
+                rating = it,
+                voteCount = media.voteCount,
+                modifier = Modifier.optionalSharedElement(
+                    key = "rating_${media.id}",
+                    sharedScope = sharedScope,
+                    animatedScope = animatedScope
+                )
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // 🔥 Overview
+        Text(
+            text = media.overview?.takeIf { it.isNotBlank() }
+                ?: "No overview available.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 4,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.optionalSharedElement(
+                key = "overview_${media.id}",
+                sharedScope = sharedScope,
+                animatedScope = animatedScope
+            )
+        )
     }
 }
+
+
+/* ------------------------------------------------ */
+/* ---------------- SMALL COMPONENTS -------------- */
+/* ------------------------------------------------ */
+
+@Composable
+private fun MediaTypeChip(
+    media: MediaCardUiModel,
+    sharedScope: SharedTransitionScope?,
+    animatedScope: AnimatedVisibilityScope?
+) {
+    Surface(
+        shape = RoundedCornerShape(4.dp),
+        color = MaterialTheme.colorScheme.primaryContainer
+    ) {
+        Text(
+            text = media.mediaType.name,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+                .optionalSharedElement(
+                    key = "type_${media.id}",
+                    sharedScope = sharedScope,
+                    animatedScope = animatedScope
+                )
+        )
+    }
+}
+
+
+@Composable
+private fun RatingRow(
+    rating: String,
+    voteCount: Int?,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+    ) {
+
+        Icon(
+            imageVector = Icons.Default.Star,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(16.dp)
+        )
+
+        Spacer(Modifier.width(4.dp))
+
+        Text(
+            text = rating,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold
+        )
+
+        voteCount?.takeIf { it > 0 }?.let {
+            Text(
+                text = " ($it votes)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        }
+    }
+}
+
+/* ------------------------------------------------ */
+/* ----------- SHARED ELEMENT HELPER ------------- */
+/* ------------------------------------------------ */
+
+@Composable
+private fun SharedTransitionScope.shared(
+    mediaId: Int,
+    key: String,
+    scope: AnimatedVisibilityScope
+) = Modifier.sharedElement(
+    rememberSharedContentState("${key}_$mediaId"),
+    scope
+)

@@ -26,8 +26,12 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.ghost.bolt.R
+import com.ghost.bolt.enums.AppCategory
 import com.ghost.bolt.enums.AppMediaType
+import com.ghost.bolt.enums.MediaSource
+import com.ghost.bolt.models.MediaCardUiModel
 import com.ghost.bolt.ui.screen.HomeScreen
+import com.ghost.bolt.ui.screen.MediaGrid
 import com.ghost.bolt.ui.screen.SearchScreen
 import com.ghost.bolt.ui.screen.detail.DetailedMediaScreen
 import kotlinx.serialization.Serializable
@@ -41,13 +45,17 @@ object TVHomeKey : NavKey
 @Serializable
 object SearchKey : NavKey
 
+@Serializable
+data class SeeAllKey(
+    val category: AppCategory,
+    val mediaType: AppMediaType,
+    val mediaSource: MediaSource
+) : NavKey
+
 
 @Serializable
 data class DetailMediaKey(
-    val mediaId: Int,
-    val coverPath: String? = null,
-    val title: String? = null,
-    val backdropPath: String? = null
+    val media: MediaCardUiModel
 ) : NavKey
 
 
@@ -135,9 +143,13 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
         }
     }
 
-    val onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit =
-        { mediaId, coverPath, title, backdropPath ->
-            backStack.add(DetailMediaKey(mediaId, coverPath, title, backdropPath))
+    val onMediaClick: (media: MediaCardUiModel) -> Unit = { media ->
+        backStack.add(DetailMediaKey(media))
+    }
+
+    val onSeeAllClick: (category: AppCategory, mediaType: AppMediaType, mediaSource: MediaSource) -> Unit =
+        { category, mediaType, mediaSource ->
+            backStack.add(SeeAllKey(category, mediaType, mediaSource))
         }
 
 
@@ -187,7 +199,9 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                             HomeScreen(
                                 modifier = Modifier.padding(innerPadding),
                                 onMediaClick = onMediaClick,
-                                mediaType = AppMediaType.MOVIE
+                                mediaType = AppMediaType.MOVIE,
+                                mediaSource = MediaSource.TMDB,
+                                onSeeAllClick = onSeeAllClick,
                             )
                         }
                     }
@@ -197,7 +211,9 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                             HomeScreen(
                                 modifier = Modifier.padding(innerPadding),
                                 onMediaClick = onMediaClick,
-                                mediaType = AppMediaType.TV
+                                mediaType = AppMediaType.TV,
+                                mediaSource = MediaSource.TMDB,
+                                onSeeAllClick = onSeeAllClick,
                             )
                         }
                     }
@@ -211,15 +227,24 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                     is DetailMediaKey -> {
                         NavEntry(key = key) {
                             DetailedMediaScreen(
-                                mediaId = key.mediaId,
+                                media = key.media,
                                 modifier = Modifier.fillMaxSize(),
                                 onBackClick = onBackClick,
-                                coverPath = key.coverPath,
-                                title = key.title,
-                                backdropPath = key.backdropPath,
                                 onCastClick = { /*TODO*/ },
                                 onMediaClick = onMediaClick,
                                 onGenreClick = { _, _ -> }
+                            )
+                        }
+                    }
+
+                    is SeeAllKey -> {
+                        NavEntry(key = key) {
+                            MediaGrid(
+                                onMediaClick = onMediaClick,
+                                mediaType = key.mediaType,
+                                mediaSource = key.mediaSource,
+                                category = key.category,
+                                onBackClick = onBackClick
                             )
                         }
                     }

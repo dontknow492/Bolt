@@ -1,4 +1,4 @@
-package com.ghost.bolt.api.response
+package com.ghost.bolt.api.tmdb.response.fields
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -8,5 +8,6 @@ data class NetworkKeywords(
     @SerialName("keywords") val movieKeywords: List<NetworkKeyword>? = null,
     @SerialName("results") val tvKeywords: List<NetworkKeyword>? = null
 ) {
-    val all: List<NetworkKeyword> get() = movieKeywords ?: tvKeywords ?: emptyList()
+    val all: List<NetworkKeyword>
+        get() = movieKeywords ?: tvKeywords ?: emptyList()
 }

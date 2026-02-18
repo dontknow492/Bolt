@@ -1,6 +1,6 @@
 package com.ghost.bolt.di
 
-import com.ghost.bolt.api.TmdbApi
+import com.ghost.bolt.api.tmdb.TmdbApi
 import com.ghost.bolt.data.store.ApiKeyStore
 import dagger.Module
 import dagger.Provides
@@ -53,7 +53,7 @@ class ApiModule {
             .client(client)
             // MUST use Gson to match your @SerializedName models
             .addConverterFactory(
-                Json.asConverterFactory(
+                Json { ignoreUnknownKeys = true }.asConverterFactory(
                     "application/json; charset=utf-8".toMediaType()
                 )
             )

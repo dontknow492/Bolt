@@ -5,7 +5,8 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,50 +16,59 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ghost.bolt.models.MediaCardUiModel
 
 @Composable
-fun SharedTransitionScope.MediaCoverView(
-    mediaId: Int,
-    title: String,
-    posterUrl: String?,
-    backdropUrl: String?,
+internal fun MediaCoverView(
+    media: MediaCardUiModel,
     variant: CoverVariant,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
-    animatedVisibilityScope: AnimatedVisibilityScope,
+    sharedScope: SharedTransitionScope? = null,
+    animatedScope: AnimatedVisibilityScope? = null
 ) {
+
     val posterWidth = when (variant) {
         CoverVariant.NORMAL -> 140.dp
         CoverVariant.MINIMAL -> 120.dp
         CoverVariant.COMPACT -> 110.dp
     }
-    // A vertical layout for grid grids
+
     Column(
         modifier = modifier
             .width(posterWidth)
-            .clickable(onClick = { onMediaClick(mediaId, posterUrl, title, backdropUrl) })
+            .clickable(onClick = onClick)
     ) {
+
+        // 🔥 Poster
         CoverImage(
-            title,
-            mediaId,
-            posterUrl,
-            animatedVisibilityScope,
+            title = media.title,
+            mediaId = media.id,
+            posterUrl = media.posterUrl,
+            sharedScope = sharedScope,
+            animatedScope = animatedScope,
             clip = RoundedCornerShape(8.dp),
-            modifier = Modifier.fillMaxHeight(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(2f / 3f)
         )
 
-        // Show text conditionally based on the variant
+        // 🔥 Title (only for non-compact variants)
         if (variant != CoverVariant.COMPACT) {
+
             Spacer(modifier = Modifier.height(8.dp))
+
             Text(
-                text = title,
+                text = media.title,
                 style = MaterialTheme.typography.labelMedium,
                 maxLines = if (variant == CoverVariant.MINIMAL) 1 else 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
-                    .sharedElement(
-                        rememberSharedContentState(key = "title_$mediaId"),
-                        animatedVisibilityScope // Pass the explicit scope here
+                    .fillMaxWidth()
+                    .optionalSharedElement(
+                        key = "title_${media.id}",
+                        sharedScope = sharedScope,
+                        animatedScope = animatedScope
                     )
             )
         }

@@ -1,6 +1,6 @@
 package com.ghost.bolt.repository
 
-import com.ghost.bolt.api.TmdbApi
+import com.ghost.bolt.api.tmdb.TmdbApi
 import com.ghost.bolt.database.AppDatabase
 import com.ghost.bolt.database.entity.MediaEntity
 import com.ghost.bolt.enums.tdmb.TMDbMediaCategory
@@ -24,9 +24,6 @@ class TmdbRemoteMediator(
 
     override suspend fun fetchFromNetwork(page: Int): List<MediaEntity> {
 
-        val tmdbMediaType = mediaType.value
-        val tmdbCategoryPath = category.path
-
         Timber.tag("TMDB_FETCH").v(
             """
         🚀 Fetching from TMDB
@@ -36,8 +33,8 @@ class TmdbRemoteMediator(
         • Language: %s
         • Region: %s
         """.trimIndent(),
-            tmdbMediaType,
-            tmdbCategoryPath,
+            mediaType.value,
+            category.path,
             page,
             language,
             region
@@ -45,58 +42,78 @@ class TmdbRemoteMediator(
 
         val startTime = System.currentTimeMillis()
 
-        val response = try {
+        try {
+            val duration: Long
+            val mapped: List<MediaEntity>
 
-            val result = when (category) {
+            when (mediaType) {
 
-                TMDbMediaCategory.TRENDING -> {
-                    Timber.tag("TMDB_FETCH").v("Calling TRENDING endpoint")
-                    api.getTrending(
-                        mediaType = tmdbMediaType,
-                        page = page,
-                        language = language,
-                    )
+                TmdbMediaType.MOVIE -> {
+
+                    val response = when (category) {
+
+                        TMDbMediaCategory.TRENDING ->
+                            api.getTrendingMovies(
+                                page = page,
+                                language = language
+                            )
+
+                        else ->
+                            api.getMovieList(
+                                category = category.path,
+                                page = page,
+                                language = language,
+                                region = region
+                            )
+                    }
+
+                    duration = System.currentTimeMillis() - startTime
+
+                    mapped = response.results.map { it.toMediaEntity() }
                 }
 
-                TMDbMediaCategory.TOP_RATED,
-                TMDbMediaCategory.POPULAR,
-                TMDbMediaCategory.NOW_PLAYING,
-                TMDbMediaCategory.UPCOMING,
-                TMDbMediaCategory.AIRING_TODAY,
-                TMDbMediaCategory.ON_THE_AIR -> {
+                TmdbMediaType.TV -> {
 
-                    Timber.tag("TMDB_FETCH").v(
-                        "Calling MEDIA LIST endpoint: %s",
-                        tmdbCategoryPath
-                    )
+                    val response = when (category) {
 
-                    api.getMediaList(
-                        mediaType = tmdbMediaType,
-                        category = tmdbCategoryPath,
-                        page = page,
-                        language = language,
-                        region = region
-                    )
+                        TMDbMediaCategory.TRENDING ->
+                            api.getTrendingTv(
+                                page = page,
+                                language = language
+                            )
+
+                        else ->
+                            api.getTvList(
+                                category = category.path,
+                                page = page,
+                                language = language,
+                                region = region
+                            )
+                    }
+
+                    duration = System.currentTimeMillis() - startTime
+
+                    mapped = response.results.map { it.toMediaEntity() }
+                }
+
+                else -> {
+                    TODO()
                 }
             }
-
-            val duration = System.currentTimeMillis() - startTime
 
             Timber.tag("TMDB_FETCH").v(
                 """
             ✅ Success
             • Page: %d
-            • Total Results: %d
-            • Total Pages: %d
+            • Results: %d
             • Took: %d ms
             """.trimIndent(),
-                result.page,
-                result.totalResults,
-                result.totalPages,
+                page,
+                mapped.size,
                 duration
             )
 
-            result
+            return mapped
 
         } catch (e: Exception) {
 
@@ -108,22 +125,14 @@ class TmdbRemoteMediator(
             • Category: %s
             • Page: %d
             """.trimIndent(),
-                tmdbMediaType,
-                tmdbCategoryPath,
+                mediaType.value,
+                category.path,
                 page
             )
 
             throw e
         }
-
-        val mapped = response.results.map { it.toMediaEntity() }
-
-        Timber.tag("TMDB_FETCH").v(
-            "🎬 Mapped %d results to MediaEntity",
-            mapped.size
-        )
-
-        return mapped
     }
+
 
 }

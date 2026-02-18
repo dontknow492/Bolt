@@ -1,4 +1,4 @@
-package com.ghost.bolt.api.response
+package com.ghost.bolt.api.tmdb.response.fields
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -18,4 +18,5 @@ data class NetworkCast(
     @SerialName("credit_id") var creditId: String? = null,
     @SerialName("order") var order: Int? = null
 )
+
 

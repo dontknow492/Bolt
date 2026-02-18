@@ -41,105 +41,119 @@ import coil3.compose.AsyncImagePainter
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
 import com.ghost.bolt.R
+import com.ghost.bolt.models.MediaCardUiModel
 
 @Composable
-fun SharedTransitionScope.MediaListView(
-    mediaId: Int,
-    title: String,
-    posterUrl: String?,
-    backdropPath: String?,
-    voteAverage: Float?,
-    overview: String?,
-    releaseDate: String?,
+internal fun MediaListView(
+    media: MediaCardUiModel,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onMediaClick: (mediaId: Int, coverPath: String?, title: String?, backdropPath: String?) -> Unit,
-    animatedVisibilityScope: AnimatedVisibilityScope,
+    sharedScope: SharedTransitionScope? = null,
+    animatedScope: AnimatedVisibilityScope? = null
 ) {
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(140.dp), // Fixed height for consistent list items
+            .height(140.dp),
         shape = RoundedCornerShape(12.dp),
-        onClick = { onMediaClick(mediaId, posterUrl, title, backdropPath) },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        onClick = onClick,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     ) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            // 1. Poster Image (Left Side)
-            CoverImage(title, mediaId, posterUrl, animatedVisibilityScope, modifier = Modifier)
 
-            // 2. Text Content (Right Side)
+        Row(modifier = Modifier.fillMaxSize()) {
+
+            // 🔥 Poster
+            CoverImage(
+                title = media.title,
+                mediaId = media.id,
+                posterUrl = media.posterUrl,
+                sharedScope = sharedScope,
+                animatedScope = animatedScope
+            )
+
+            // 🔥 Content
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+
                 // Title
                 Text(
-                    text = title,
+                    text = media.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.sharedElement(
-                        rememberSharedContentState(key = "title_$mediaId"),
-                        animatedVisibilityScope
+                    modifier = Modifier.optionalSharedElement(
+                        key = "title_${media.id}",
+                        sharedScope = sharedScope,
+                        animatedScope = animatedScope
                     )
                 )
 
-                // Date & Rating Row
+                // Year + Rating
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (!releaseDate.isNullOrBlank()) {
+
+                    media.releaseDate?.take(4)?.let { year ->
                         Text(
-                            text = releaseDate.take(4), // Just show the Year
+                            text = year,
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.sharedElement(
-                                rememberSharedContentState(key = "release_date_$mediaId"),
-                                animatedVisibilityScope
+                            modifier = Modifier.optionalSharedElement(
+                                key = "release_${media.id}",
+                                sharedScope = sharedScope,
+                                animatedScope = animatedScope
                             )
                         )
                     }
 
-                    if (voteAverage != null && voteAverage > 0f) {
+                    media.voteAverage?.takeIf { it > 0f }?.let { rating ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.sharedElement(
-                                rememberSharedContentState(key = "rating_$mediaId"),
-                                animatedVisibilityScope
+                            modifier = Modifier.optionalSharedElement(
+                                key = "rating_${media.id}",
+                                sharedScope = sharedScope,
+                                animatedScope = animatedScope
                             )
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Star,
-                                contentDescription = "Rating",
+                                contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(14.dp)
                             )
-                            Spacer(modifier = Modifier.width(2.dp))
-                            Text(
-                                text = String.format("%.1f", voteAverage),
-                                style = MaterialTheme.typography.labelMedium,
 
-                                )
+                            Spacer(Modifier.width(4.dp))
+
+                            Text(
+                                text = String.format("%.1f", rating),
+                                style = MaterialTheme.typography.labelMedium
+                            )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(Modifier.weight(1f))
 
                 // Overview
                 Text(
-                    text = overview ?: "No overview available.",
+                    text = media.overview ?: "No overview available.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 5, // Keeps the card height predictable
+                    maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.sharedElement(
-                        rememberSharedContentState(key = "overview_$mediaId"),
-                        animatedVisibilityScope
+                    modifier = Modifier.optionalSharedElement(
+                        key = "overview_${media.id}",
+                        sharedScope = sharedScope,
+                        animatedScope = animatedScope
                     )
                 )
             }
@@ -147,30 +161,39 @@ fun SharedTransitionScope.MediaListView(
     }
 }
 
+
 @Composable
-fun SharedTransitionScope.CoverImage(
+fun CoverImage(
     title: String,
     mediaId: Int,
     posterUrl: String?,
-    animatedVisibilityScope: AnimatedVisibilityScope,
-    clip: Shape = RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sharedScope: SharedTransitionScope? = null,
+    animatedScope: AnimatedVisibilityScope? = null,
+    clip: Shape = RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)
 ) {
+
+    val imageModifier = modifier
+        .fillMaxHeight()
+        .aspectRatio(2f / 3f)
+        .clip(clip)
+        .optionalSharedElement(
+            key = "poster_$mediaId",
+            sharedScope = sharedScope,
+            animatedScope = animatedScope
+        )
+
     SubcomposeAsyncImage(
-        model = posterUrl, // You'll prepend the TMDB base URL here usually
+        model = posterUrl,
         contentDescription = "$title poster",
         contentScale = ContentScale.Crop,
-        modifier = modifier
-            .fillMaxHeight()
-            .aspectRatio(2f / 3f) // Standard movie poster ratio
-            .clip(clip)
-            .sharedElement(
-                rememberSharedContentState(key = "poster_$mediaId"),
-                animatedVisibilityScope // Pass the explicit scope here
-            )
+        modifier = imageModifier
     ) {
+
         val state by painter.state.collectAsState()
+
         when (state) {
+
             is AsyncImagePainter.State.Success -> {
                 SubcomposeAsyncImageContent()
             }
@@ -184,15 +207,21 @@ fun SharedTransitionScope.CoverImage(
             }
 
             is AsyncImagePainter.State.Empty -> {
-                Text(text = "Empty")
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No Image")
+                }
             }
 
             else -> {
-                Box(modifier = Modifier.align(Alignment.Center)) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .size(30.dp)
+                        modifier = Modifier.size(30.dp)
                     )
                 }
             }
