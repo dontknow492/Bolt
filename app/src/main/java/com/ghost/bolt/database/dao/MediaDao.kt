@@ -60,8 +60,6 @@ interface MediaDao {
 
     // Use this for the "Advanced Filter" screen
     // You will build the SimpleSQLiteQuery in your Repository based on UI state
-    @RawQuery(observedEntities = [MediaEntity::class])
-    fun advancedSearch(query: SupportSQLiteQuery): PagingSource<Int, MediaEntity>
 
     // --- 4. REMOTE MEDIATOR HELPERS ---
 
@@ -101,7 +99,10 @@ interface MediaDao {
     @Query("SELECT * FROM MediaSimilar WHERE source_media_id = :mediaId")
     suspend fun getSimilarCrossRefs(mediaId: Int): List<MediaSimilarCrossRef>
 
+    // In MediaDao
+    @RawQuery(observedEntities = [MediaEntity::class])
+    fun advancedSearch(query: SupportSQLiteQuery): PagingSource<Int, MediaEntity>
 
+    @RawQuery(observedEntities = [MediaEntity::class])
+    fun getDiscoverResults(query: SupportSQLiteQuery): PagingSource<Int, MediaEntity>
 }
-
-

@@ -13,14 +13,19 @@ import com.ghost.bolt.database.entity.MediaEntity
 import com.ghost.bolt.enums.AppCategory
 import com.ghost.bolt.enums.AppMediaType
 import com.ghost.bolt.enums.AppendToResponseItem
+import com.ghost.bolt.enums.DiscoverFilter
 import com.ghost.bolt.enums.MediaProvider
 import com.ghost.bolt.enums.MediaSource
+import com.ghost.bolt.enums.SearchFilter
+import com.ghost.bolt.enums.tdmb.TmdbMediaType
 import com.ghost.bolt.enums.toTmdbCategoryOrNull
 import com.ghost.bolt.enums.toTmdbMediaType
 import com.ghost.bolt.exceptions.InvalidMediaCategoryException
 import com.ghost.bolt.exceptions.InvalidMediaTypeException
 import com.ghost.bolt.models.UiMediaDetail
 import com.ghost.bolt.models.toDecomposition
+import com.ghost.bolt.utils.DiscoverQueryBuilder
+import com.ghost.bolt.utils.SearchQueryBuilder
 import com.ghost.bolt.utils.TmdbQueryUtils
 import com.ghost.bolt.utils.mapper.toUiMediaDetail
 import kotlinx.coroutines.Dispatchers
@@ -222,6 +227,55 @@ class MediaRepository @Inject constructor(
 
         // Ensure DB work happens on IO thread
     }
+
+
+
+    @OptIn(ExperimentalPagingApi::class)
+    fun searchMediaWithFilter(filter: SearchFilter): Flow<PagingData<MediaEntity>> {
+        val query = SearchQueryBuilder.build(filter)
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                // Fix: Disable placeholders to prevent key-generation from triggering loads
+                enablePlaceholders = false,
+                // Fix: Load 3x pages initially to fill screen and prevent immediate 'append'
+                initialLoadSize = 60,
+                prefetchDistance = 10
+            ),
+            remoteMediator = SearchRemoteMediator(
+                db = db,
+                api = tmdbApi,
+                query = filter.query,
+                mediaType = TmdbMediaType.TV
+            ),
+            pagingSourceFactory = { mediaDao.advancedSearch(query)}
+        ).flow
+
+    }
+
+
+
+    @OptIn(ExperimentalPagingApi::class)
+    fun discoverMedia(filter: DiscoverFilter): Flow<PagingData<MediaEntity>> {
+        val query = DiscoverQueryBuilder.build(filter)
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false,
+                initialLoadSize = 40,
+                prefetchDistance = 10
+            ),
+            remoteMediator = DiscoverRemoteMediator(
+                db = db,
+                api = tmdbApi,
+                filter = filter
+            ),
+            pagingSourceFactory = {
+                mediaDao.getDiscoverResults(query)
+            }
+        ).flow
+    }
+
 
 
 }

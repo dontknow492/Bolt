@@ -44,16 +44,6 @@ interface TmdbApi {
     ): TmdbResponse<TMDbTv>
 
 
-//    @GET("discover/{media_type}")
-//    suspend fun discover(
-//        @Path("media_type") mediaType: String, // movie, tv
-//        @Query("page") page: Int,
-//        @Query("language") language: String = "en-US",
-//        @Query("with_genres") genres: String? = null,
-//        @Query("sort_by") sortBy: String? = null,
-//        @Query("primary_release_year") year: Int? = null
-//    ): TmdbResponse
-
 
     // --- Details ---
     @GET("movie/{id}")
@@ -72,6 +62,104 @@ interface TmdbApi {
         @Query("append_to_response")
         appendToResponse: String = "credits,similar,videos,images"
     ): TMDbTvDetailResponse
+
+
+    // Search
+    @GET("search/movie")
+    suspend fun searchMovies(
+        @Query("query") query: String,
+        @Query("page") page: Int = 1,
+        @Query("include_adult") includeAdult: Boolean = false,
+        @Query("language") language: String? = null,
+        @Query("region") region: String? = null,
+        @Query("year") year: Int? = null
+    ): TmdbResponse<TMDbMovie>
+
+
+    @GET("search/tv")
+    suspend fun searchTv(
+        @Query("query") query: String,
+        @Query("page") page: Int = 1,
+        @Query("include_adult") includeAdult: Boolean = false,
+        @Query("language") language: String? = null,
+        @Query("first_air_date_year") firstAirDateYear: Int? = null
+    ): TmdbResponse<TMDbTv>
+
+    //discover
+    @GET("discover/movie")
+    suspend fun discoverMovie(
+        @Query("page") page: Int = 1,
+        @Query("language") language: String = "en-US",
+        @Query("include_adult") includeAdult: Boolean = false,
+
+        // Genres
+        @Query("with_genres") withGenres: String? = null,
+        @Query("without_genres") withoutGenres: String? = null,
+
+        // Cast & Crew
+        @Query("with_cast") withCast: String? = null,
+        @Query("with_crew") withCrew: String? = null,
+
+        // Keywords
+        @Query("with_keywords") withKeywords: String? = null,
+
+        // Rating
+        @Query("vote_average.gte") voteAverageGte: Float? = null,
+        @Query("vote_average.lte") voteAverageLte: Float? = null,
+        @Query("vote_count.gte") voteCountGte: Int? = null,
+
+        // Release Date Range
+        @Query("primary_release_date.gte") releaseDateGte: String? = null,
+        @Query("primary_release_date.lte") releaseDateLte: String? = null,
+
+        // Runtime
+        @Query("with_runtime.gte") runtimeGte: Int? = null,
+        @Query("with_runtime.lte") runtimeLte: Int? = null,
+
+        // Providers (Optional)
+        @Query("with_watch_providers") watchProviders: String? = null,
+        @Query("watch_region") watchRegion: String? = null,
+
+        // Sorting
+        @Query("sort_by") sortBy: String? = "popularity.desc"
+    ): TmdbResponse<TMDbMovie>
+
+
+    @GET("discover/tv")
+    suspend fun discoverTv(
+        @Query("page") page: Int = 1,
+        @Query("language") language: String = "en-US",
+        @Query("include_adult") includeAdult: Boolean = false,
+
+        // Genres
+        @Query("with_genres") withGenres: String? = null,
+        @Query("without_genres") withoutGenres: String? = null,
+
+        // Cast & Crew
+        @Query("with_cast") withCast: String? = null,
+        @Query("with_crew") withCrew: String? = null,
+
+        // Keywords
+        @Query("with_keywords") withKeywords: String? = null,
+
+        // Rating
+        @Query("vote_average.gte") voteAverageGte: Float? = null,
+        @Query("vote_average.lte") voteAverageLte: Float? = null,
+        @Query("vote_count.gte") voteCountGte: Int? = null,
+
+        // First Air Date Range
+        @Query("first_air_date.gte") firstAirDateGte: String? = null,
+        @Query("first_air_date.lte") firstAirDateLte: String? = null,
+
+        // Networks
+        @Query("with_networks") withNetworks: String? = null,
+
+        // Sorting
+        @Query("sort_by") sortBy: String? = "popularity.desc"
+    ): TmdbResponse<TMDbTv>
+
+
+
 
 
 }

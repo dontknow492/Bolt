@@ -28,8 +28,10 @@ import androidx.navigation3.ui.NavDisplay
 import com.ghost.bolt.R
 import com.ghost.bolt.enums.AppCategory
 import com.ghost.bolt.enums.AppMediaType
+import com.ghost.bolt.enums.DiscoverFilter
 import com.ghost.bolt.enums.MediaSource
 import com.ghost.bolt.models.MediaCardUiModel
+import com.ghost.bolt.ui.screen.DiscoverScreen
 import com.ghost.bolt.ui.screen.HomeScreen
 import com.ghost.bolt.ui.screen.MediaGrid
 import com.ghost.bolt.ui.screen.SearchScreen
@@ -58,6 +60,9 @@ data class DetailMediaKey(
     val media: MediaCardUiModel
 ) : NavKey
 
+@Serializable
+data class DiscoverMediaKey(val filter: DiscoverFilter): NavKey
+
 
 val navigationBarItem = listOf(
     BoltNavigationBarItem(
@@ -77,6 +82,24 @@ val navigationBarItem = listOf(
             )
         },
         key = MovieHomeKey
+    ),
+    BoltNavigationBarItem(
+        label = "Discover",
+        icon = {
+            Icon(
+                painter = painterResource(R.drawable.explore),
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
+            )
+        },
+        selectedIcon = {
+            Icon(
+                painter = painterResource(R.drawable.explore_nearby),
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
+            )
+        },
+        key = DiscoverMediaKey(DiscoverFilter())
     ),
     BoltNavigationBarItem(
         label = "Search",
@@ -220,7 +243,7 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
 
                     is SearchKey -> {
                         NavEntry(key = key) {
-                            SearchScreen(modifier = Modifier.padding(innerPadding))
+                            SearchScreen(onMediaClick = onMediaClick)
                         }
                     }
 
@@ -246,6 +269,14 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                                 mediaSource = key.mediaSource,
                                 category = key.category,
                                 onBackClick = onBackClick
+                            )
+                        }
+                    }
+
+                    is DiscoverMediaKey -> {
+                        NavEntry(key = key) {
+                            DiscoverScreen(
+                                onMediaClick = onMediaClick
                             )
                         }
                     }
