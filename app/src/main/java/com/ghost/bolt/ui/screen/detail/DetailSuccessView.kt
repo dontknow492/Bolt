@@ -73,6 +73,32 @@ import com.ghost.bolt.utils.TmdbConfig
 import com.ghost.bolt.utils.mapper.toUiMediaDetail
 import java.time.Instant
 import java.time.ZoneId
+import kotlin.math.roundToInt
+
+fun formatVoteCount(voteCount: Int): String {
+    if (voteCount <= 0) return ""
+
+    val suffix = when {
+        voteCount < 1000 -> ""
+        voteCount < 1000000 -> "K"
+        voteCount < 1000000000 -> "M"
+        else -> "B"
+    }
+
+    val value = when (suffix) {
+        "K" -> (voteCount / 1000.0).roundToInt().toString()
+        "M" -> (voteCount / 1000000.0).roundToInt().toString()
+        "B" -> (voteCount / 1000000000.0).roundToInt().toString()
+        else -> voteCount.toString()
+    }
+
+    return "$value$suffix"
+}
+
+private fun Long?.toYear(): String? = this?.let {
+    Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).year.toString()
+}
+
 
 @Composable
 fun DetailSuccessContent(
@@ -83,93 +109,110 @@ fun DetailSuccessContent(
     onKeywordClick: (KeywordEntity) -> Unit
 ) {
     val media = detail.media
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-    ) {
-
-        DetailHeaderSection(media)
-
-        Column(modifier = Modifier.padding(16.dp)) {
-
-            GenreSection(detail.genres, onGenreClick)
-
-            OverviewSection(media.overview)
-
-            KeywordSection(detail.keywords, onKeywordClick = onKeywordClick)
-
-            CastSection(detail.cast, onCastClick)
-
-            ExternalLinksSection(Modifier, media)
-
-            RelatedMediaSection(
-                "Recommendations",
-                detail.recommendations,
-                onMediaClick
-            )
-            RelatedMediaSection(
-                "Similar",
-                detail.similar,
-                onMediaClick
-            )
+    val year = remember(media.releaseDate) { media.releaseDate.toYear() }
+    val finishYear = remember(media.finishDate) { media.finishDate.toYear() }
 
 
-            Spacer(modifier = Modifier.height(80.dp))
+    Box {
+        AsyncImage(
+            model = TmdbConfig.getPosterUrl(media.posterPath, TmdbConfig.TMDbPosterSize.W500)
+                ?: TmdbConfig.getBackdropUrl(media.posterPath),
+            contentDescription = "background Image",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
+
+            // top spacing and some extra
+
+
+            DetailHeaderSection(media)
+            Column(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.8f))
+                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+            ) {
+
+                Text(
+                    text = media.title,
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                MediaMetaRow(
+                    year = year,
+                    runtime = media.runtime,
+                    adult = media.adult ?: false,
+                    mediaType = media.mediaType.name,
+                    finishYear = finishYear,
+                    extra = null
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+
+
+                GenreSection(detail.genres, onGenreClick)
+
+                OverviewSection(media.overview)
+
+                KeywordSection(detail.keywords, onKeywordClick = onKeywordClick)
+
+                CastSection(detail.cast, onCastClick)
+
+                ExternalLinksSection(Modifier, media)
+
+                RelatedMediaSection(
+                    "Recommendations", detail.recommendations, onMediaClick
+                )
+                RelatedMediaSection(
+                    "Similar", detail.similar, onMediaClick
+                )
+
+
+                Spacer(modifier = Modifier.height(80.dp))
+            }
         }
     }
+
 }
 
 
 @Composable
 private fun DetailHeaderSection(media: MediaEntity) {
-
-    val year = remember(media.releaseDate) {
-        media.releaseDate?.let {
-            Instant.ofEpochMilli(it)
-                .atZone(ZoneId.systemDefault())
-                .year
-                .toString()
-        }
-    }
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color.Transparent,
+                        Color.Transparent,
+                        MaterialTheme.colorScheme.surfaceContainer.copy(0.5f),
+                        MaterialTheme.colorScheme.surfaceContainer.copy(0.8f)
+                    ),
+//                    startY = 0f
+                )
+            )
             .height(500.dp)
     ) {
 
-        AsyncImage(
-            model = TmdbConfig.getPosterUrl(media.posterPath)
-                ?: TmdbConfig.getBackdropUrl(media.posterPath),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        GradientOverlay()
-
-        Column(
+        MediaRatingRow(
+            voteAverage = media.voteAverage,
+            voteCount = media.voteCount,
+            source = media.mediaSource,
             modifier = Modifier
+//                .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f))
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
                 .align(Alignment.BottomStart)
-                .padding(16.dp)
-        ) {
-
-            Text(
-                text = media.title,
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            MediaMetaRow(
-                voteAverage = media.voteAverage,
-                year = year,
-                runtime = media.runtime
-            )
-        }
+        )
     }
 }
 
@@ -184,52 +227,166 @@ private fun GradientOverlay(startY: Float = 300f) {
                     listOf(
                         Color.Transparent,
                         MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.8f),
+                        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.8f),
                         MaterialTheme.colorScheme.surfaceContainer
-                    ),
-                    startY = startY
+                    ), startY = startY
                 )
             )
     )
 }
 
 @Composable
-private fun MediaMetaRow(
-    voteAverage: Float?,
-    year: String?,
-    runtime: Int?
+private fun MediaRatingRow(
+    voteAverage: Float?, voteCount: Int?, source: MediaSource, modifier: Modifier = Modifier
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    if (voteAverage == null || voteAverage <= 0f) return
 
-        voteAverage?.takeIf { it > 0 }?.let {
-            Icon(
-                imageVector = Icons.Rounded.Star,
-                contentDescription = null,
-                tint = Color(0xFFFFC107),
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(Modifier.width(4.dp))
-            Text(String.format("%.1f", it), style = MaterialTheme.typography.bodyLarge)
-            Spacer(Modifier.width(12.dp))
+    val formattedVoteCount = remember(voteCount) {
+        voteCount?.let { formatVoteCount(it) }
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically, modifier = modifier
+    ) {
+
+        Surface(
+            shape = RoundedCornerShape(50),
+            tonalElevation = 2.dp,
+            shadowElevation = 4.dp,
+            color = Color.Transparent
+        ) {
+            Box(
+                modifier = Modifier
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                Color(0xFFFFC107), Color(0xFFFFA000)
+                            )
+                        ), shape = RoundedCornerShape(50)
+                    )
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Star,
+                        contentDescription = "Rating",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+
+                    Spacer(Modifier.width(6.dp))
+
+                    Text(
+                        text = String.format("%.1f", voteAverage),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White
+                    )
+
+                    Spacer(Modifier.width(6.dp))
+
+                    Text(
+                        text = source.name,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White.copy(alpha = 0.85f)
+                    )
+                }
+            }
         }
 
-        year?.let {
-            Text(
-                it,
-                color = MaterialTheme.colorScheme.onBackground.copy(0.7f),
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Spacer(Modifier.width(12.dp))
-        }
+        formattedVoteCount?.let {
+            Spacer(Modifier.width(8.dp))
 
-        runtime?.takeIf { it > 0 }?.let {
             Text(
-                "${it / 60}h ${it % 60}m",
-                color = MaterialTheme.colorScheme.onBackground.copy(0.7f),
-                style = MaterialTheme.typography.bodyLarge
+                text = "$it votes",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
+
+
+@Composable
+private fun MediaMetaRow(
+    year: String?,
+    finishYear: String?,
+    mediaType: String?,
+    extra: String?, // seasons, episodes, etc.
+    runtime: Int?,
+    adult: Boolean
+) {
+    val metaColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    // Build metadata list dynamically
+    val metaItems = buildList {
+
+        mediaType?.let { add(it.uppercase()) }
+
+        if (year != null) {
+            if (finishYear != null && finishYear != year) {
+                add("$year–$finishYear") // TV range
+            } else {
+                add(year) // Movie year
+            }
+        }
+
+        runtime?.takeIf { it > 0 }?.let {
+            val hours = it / 60
+            val minutes = it % 60
+            add(
+                if (hours > 0) "${hours}h ${minutes}m"
+                else "${minutes}m"
+            )
+        }
+
+        extra?.let { add(it) } // "3 Seasons", "24 Episodes"
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        // NSFW badge
+        if (adult) {
+            Surface(
+                shape = RoundedCornerShape(6.dp), color = MaterialTheme.colorScheme.errorContainer
+            ) {
+                Text(
+                    text = "18+",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                )
+            }
+
+            Spacer(Modifier.width(8.dp))
+        }
+
+        // Render metadata with automatic separators
+        metaItems.forEachIndexed { index, item ->
+            MetaText(item, metaColor)
+
+            if (index < metaItems.lastIndex) {
+                Spacer(Modifier.width(8.dp))
+                MetaText("•", metaColor)
+                Spacer(Modifier.width(8.dp))
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun MetaText(
+    text: String, color: Color
+) {
+    Text(
+        text = text, color = color, style = MaterialTheme.typography.bodyLarge
+    )
+}
+
 
 @Composable
 fun ExternalLinksSection(modifier: Modifier = Modifier, media: MediaEntity) {
@@ -266,8 +423,7 @@ fun ExternalLinksSection(modifier: Modifier = Modifier, media: MediaEntity) {
 
 @Composable
 private fun GenreSection(
-    genres: List<GenreEntity>,
-    onGenreClick: (GenreEntity) -> Unit
+    genres: List<GenreEntity>, onGenreClick: (GenreEntity) -> Unit
 ) {
     if (genres.isEmpty()) return
 
@@ -275,7 +431,8 @@ private fun GenreSection(
         items(genres) { genre ->
             SuggestionChip(
                 onClick = { onGenreClick(genre) },
-                label = { Text(genre.name) }
+                label = { Text(genre.name) },
+                shape = RoundedCornerShape(percent = 50),
             )
         }
     }
@@ -285,9 +442,7 @@ private fun GenreSection(
 
 @Composable
 fun KeywordSection(
-    keywords: List<KeywordEntity>,
-    onKeywordClick: (KeywordEntity) -> Unit,
-    previewCount: Int = 6
+    keywords: List<KeywordEntity>, onKeywordClick: (KeywordEntity) -> Unit, previewCount: Int = 6
 ) {
     if (keywords.isEmpty()) return
 
@@ -312,17 +467,14 @@ fun KeywordSection(
         ) {
             previewKeywords.forEach { keyword ->
                 KeywordChip(
-                    text = "#${keyword.keywords}",
-                    onClick = { onKeywordClick(keyword) }
-                )
+                    text = "#${keyword.keywords}", onClick = { onKeywordClick(keyword) })
             }
 
             if (!expanded && remainingKeywords.isNotEmpty()) {
                 KeywordChip(
                     text = "+${remainingKeywords.size}",
                     isExpandChip = true,
-                    onClick = { expanded = true }
-                )
+                    onClick = { expanded = true })
             }
         }
 
@@ -337,15 +489,10 @@ fun KeywordSection(
                 ) {
                     remainingKeywords.forEach { keyword ->
                         KeywordChip(
-                            text = "#${keyword.keywords}",
-                            onClick = { onKeywordClick(keyword) }
-                        )
+                            text = "#${keyword.keywords}", onClick = { onKeywordClick(keyword) })
                     }
                     KeywordChip(
-                        text = "Show less",
-                        isExpandChip = true,
-                        onClick = { expanded = false }
-                    )
+                        text = "Show less", isExpandChip = true, onClick = { expanded = false })
                 }
             }
         }
@@ -357,35 +504,24 @@ fun KeywordSection(
 
 @Composable
 private fun KeywordChip(
-    text: String,
-    onClick: () -> Unit,
-    isExpandChip: Boolean = false
+    text: String, onClick: () -> Unit, isExpandChip: Boolean = false
 ) {
     Surface(
         shape = MaterialTheme.shapes.small,
-        color = if (isExpandChip)
-            MaterialTheme.colorScheme.primaryContainer
-        else
-            MaterialTheme.colorScheme.surfaceVariant,
-        modifier = Modifier.clickable { onClick() }
-    ) {
+        color = if (isExpandChip) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier.clickable { onClick() }) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,
-            color = if (isExpandChip)
-                MaterialTheme.colorScheme.onPrimaryContainer
-            else
-                MaterialTheme.colorScheme.primary,
+            color = if (isExpandChip) MaterialTheme.colorScheme.onPrimaryContainer
+            else MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(
-                horizontal = 14.dp,
-                vertical = 8.dp
+                horizontal = 14.dp, vertical = 8.dp
             )
         )
     }
 }
-
-
-
 
 
 @Composable
@@ -408,8 +544,7 @@ private fun OverviewSection(overview: String?) {
                 text = overview,
                 maxLines = if (isExpanded) Int.MAX_VALUE else 4,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.clickable { isExpanded = !isExpanded }
-            )
+                modifier = Modifier.clickable { isExpanded = !isExpanded })
         }
 
     }
@@ -419,9 +554,7 @@ private fun OverviewSection(overview: String?) {
 
 @Composable
 private fun RelatedMediaSection(
-    title: String,
-    relatedMediaItems: List<UiRelatedMedia>,
-    onMediaClick: (MediaCardUiModel) -> Unit
+    title: String, relatedMediaItems: List<UiRelatedMedia>, onMediaClick: (MediaCardUiModel) -> Unit
 ) {
     if (relatedMediaItems.isEmpty()) return
 
@@ -449,21 +582,15 @@ private fun RelatedMediaSection(
 
 @Composable
 fun ExternalLinkButton(
-    painter: Painter,
-    label: String,
-    url: String
+    painter: Painter, label: String, url: String
 ) {
     val context = LocalContext.current
-    AssistChip(
-        onClick = {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-            context.startActivity(intent)
-        },
-        label = { Text(label) },
-        leadingIcon = {
-            Icon(painter, contentDescription = null, modifier = Modifier.size(16.dp))
-        }
-    )
+    AssistChip(onClick = {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        context.startActivity(intent)
+    }, label = { Text(label) }, leadingIcon = {
+        Icon(painter, contentDescription = null, modifier = Modifier.size(16.dp))
+    })
 }
 
 
@@ -486,7 +613,7 @@ private fun SuccessContentPreview() {
         status = null,
         finishDate = null,
         revenue = null,
-        adult = false,
+        adult = !false,
         budget = null,
         originalLanguage = "en",
         originalTitle = "Sample Movie Title",
@@ -498,9 +625,7 @@ private fun SuccessContentPreview() {
     )
 
     val sampleGenres = listOf(
-        GenreEntity(1, "Action"),
-        GenreEntity(2, "Adventure"),
-        GenreEntity(3, "Science Fiction")
+        GenreEntity(1, "Action"), GenreEntity(2, "Adventure"), GenreEntity(3, "Science Fiction")
     )
 
     val sampleKeywords = listOf(
@@ -524,14 +649,12 @@ private fun SuccessContentPreview() {
             name = "Actor One",
             profilePath = "/path1.jpg",
             knownForDepartment = "Acting"
-        ),
-        CastEntity(
+        ), CastEntity(
             castId = 2,
             name = "Actor Two",
             profilePath = "/path2.jpg",
             knownForDepartment = "Acting"
-        ),
-        CastEntity(
+        ), CastEntity(
             castId = 3,
             name = "Actor Three",
             profilePath = "/path3.jpg",
@@ -565,8 +688,7 @@ private fun SuccessContentPreview() {
             episodes = null,
             themeColor = null,
             mediaSource = MediaSource.TMDB
-        ),
-        MediaEntity(
+        ), MediaEntity(
             id = 3,
             title = "A Third Film",
             posterPath = "/qNBAXBIQlnOThrVvA6mA2B5ggV6.jpg",
@@ -597,13 +719,12 @@ private fun SuccessContentPreview() {
     val sampleDetail = MediaDetail(
         media = sampleMedia,
         genres = sampleGenres,
-
         cast = sampleCast,
         recommendations = sampleRecommendations,
+        similar = sampleRecommendations,
         keywords = sampleKeywords,
         productionCompanies = emptyList(),
         spokenLanguages = emptyList(),
-        similar = emptyList()
     )
 
     BoltTheme {
@@ -612,8 +733,7 @@ private fun SuccessContentPreview() {
             onCastClick = {},
             onMediaClick = { },
             onGenreClick = { },
-            onKeywordClick = { }
-        )
+            onKeywordClick = { })
     }
 }
 
