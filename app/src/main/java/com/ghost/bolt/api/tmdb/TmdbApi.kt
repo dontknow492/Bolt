@@ -44,7 +44,6 @@ interface TmdbApi {
     ): TmdbResponse<TMDbTv>
 
 
-
     // --- Details ---
     @GET("movie/{id}")
     suspend fun getMovieDetails(
@@ -157,9 +156,6 @@ interface TmdbApi {
         // Sorting
         @Query("sort_by") sortBy: String? = "popularity.desc"
     ): TmdbResponse<TMDbTv>
-
-
-
 
 
 }

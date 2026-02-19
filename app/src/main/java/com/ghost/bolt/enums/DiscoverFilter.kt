@@ -1,6 +1,5 @@
 package com.ghost.bolt.enums
 
-import com.ghost.bolt.R
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -74,35 +73,50 @@ fun DiscoverFilter.maxDate(): String? =
 
 enum class DiscoverSortOption(
     val field: String,
+    val sql: String,
     val supportsTv: Boolean = true,
     val supportsMovie: Boolean = true,
     val defaultOrder: SortOrder = SortOrder.DESC
 ) {
 
     POPULARITY(
-        field = "popularity"
+        field = "popularity",
+        sql = "popularity"
+
     ),
 
     RELEASE_DATE(
         field = "primary_release_date",
+        sql = "release_date",
         supportsTv = false
     ),
 
     FIRST_AIR_DATE(
         field = "first_air_date",
+        sql = "release_date",
         supportsMovie = false
     ),
 
     VOTE_AVERAGE(
-        field = "vote_average"
+        field = "vote_average",
+        sql = "vote_average"
+
     ),
 
     VOTE_COUNT(
-        field = "vote_count"
+        field = "vote_count",
+        sql = "vote_count"
     ),
 
     REVENUE(
         field = "revenue",
-        supportsTv = false
+        supportsTv = false,
+        sql = "revenue"
+    ),
+
+    RUNTIME(
+        field = "runtime",
+        supportsMovie = false,
+        sql = "runtime"
     )
 }

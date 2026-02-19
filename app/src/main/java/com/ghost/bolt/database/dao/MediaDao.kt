@@ -47,6 +47,10 @@ interface MediaDao {
     @Query("SELECT * FROM Media WHERE id = :mediaId AND media_type = :mediaType AND media_source = :mediaSource")
     fun getMediaDetailFlow(mediaId: Int, mediaType: String, mediaSource: String): Flow<MediaDetail?>
 
+    @Transaction
+    @Query("SELECT * FROM Media WHERE id = :mediaId AND media_type = :mediaType AND media_source = :mediaSource")
+    fun getMediaDetail(mediaId: Int, mediaType: String, mediaSource: String): MediaDetail?
+
     // --- 3. SEARCH & DISCOVERY (Complex) ---
     // Use this for simple name search
     @Query(

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,7 +15,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,6 +30,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,9 +52,11 @@ import com.ghost.bolt.enums.DiscoverSortOption
 import com.ghost.bolt.enums.SortOrder
 import com.ghost.bolt.models.MediaCardUiModel
 import com.ghost.bolt.ui.components.card.CoverVariant
+import com.ghost.bolt.ui.components.card.MediaCardShimmer
 import com.ghost.bolt.ui.components.card.MediaCardStyle
 import com.ghost.bolt.ui.components.card.MediaEntityCard
 import com.ghost.bolt.ui.viewModel.DiscoverViewModel
+import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,6 +68,13 @@ fun DiscoverScreen(
     val filter by viewModel.filterState.collectAsState()
     val pagingItems = viewModel.discoverResults.collectAsLazyPagingItems()
     var bottomSheetVisible: Boolean by remember { mutableStateOf(false) }
+
+//    val pagingItems = viewModel.discoverResults.collectAsLazyPagingItems()
+
+// Add this temporary log
+    LaunchedEffect(pagingItems.loadState) {
+        Timber.d("UI LoadState: ${pagingItems.loadState.refresh}, Count: ${pagingItems.itemCount}")
+    }
 
 
     Scaffold(
@@ -85,6 +93,8 @@ fun DiscoverScreen(
                 .padding(padding)
                 .fillMaxSize()
         ) {
+
+            Text("${pagingItems.itemCount} results, ")
 
 
             DiscoverResultsGrid(
@@ -283,42 +293,37 @@ fun RatingSection(
 }
 
 
+//import androidx.paging.compose.items // Ensure this import is present
+
 @Composable
 fun DiscoverResultsGrid(
     items: LazyPagingItems<MediaEntity>,
     mediaStyle: MediaCardStyle,
-    columns: Int = 2,
-    modifier: Modifier = Modifier,
     onMediaClick: (MediaCardUiModel) -> Unit,
+    columns: Int = 1,
+    // ... other params
 ) {
     LazyVerticalGrid(
-        modifier = modifier,
         columns = GridCells.Fixed(columns),
-        contentPadding = PaddingValues(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        // ... styling
     ) {
-
-        items(items.itemCount) { index ->
+        // ✅ Use the items extension, not items(count)
+        items(
+            count = items.itemCount,
+            key = { index -> items[index]?.id ?: index } // Better performance with keys
+        ) { index ->
             items[index]?.let { media ->
                 MediaEntityCard(
-                    media,
+                    entity = media,
                     onMediaClick = onMediaClick,
                     mediaStyle = mediaStyle
                 )
             }
         }
 
-        items.apply {
-            when {
-                loadState.append is LoadState.Loading -> {
-                    item {
-                        CircularProgressIndicator(
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
-                }
-            }
+        // Handle Loading/Error states
+        if (items.loadState.append is LoadState.Loading) {
+            item { MediaCardShimmer(mediaStyle) }
         }
     }
 }

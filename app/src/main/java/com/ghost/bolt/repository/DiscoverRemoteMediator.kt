@@ -66,10 +66,12 @@ class DiscoverRemoteMediator(
                 }
             }
 
-            Timber.Forest.d("🎬 Discover page $page for $remoteKeyLabel")
+            Timber.d("🎬 Discover page $page for $remoteKeyLabel")
 
             val entities = fetchFromNetwork(page)
             val endOfPaginationReached = entities.isEmpty()
+
+            Timber.d("🎬 Response Enitity: ${entities.size} for page:$page - $remoteKeyLabel")
 
             db.withTransaction {
 
@@ -96,7 +98,7 @@ class DiscoverRemoteMediator(
             MediatorResult.Success(endOfPaginationReached)
 
         } catch (e: Exception) {
-            Timber.Forest.e(e, "❌ Discover load failed")
+            Timber.e(e, "❌ Discover load failed")
             MediatorResult.Error(e)
         }
     }
@@ -137,7 +139,7 @@ class DiscoverRemoteMediator(
 
                 val duration = System.currentTimeMillis() - startTime
 
-                Timber.Forest.d(
+                Timber.d(
                     "✅ Movie discover page $page, " +
                             "${response.results.size} results, " +
                             "took ${duration}ms"
@@ -163,7 +165,7 @@ class DiscoverRemoteMediator(
 
                 val duration = System.currentTimeMillis() - startTime
 
-                Timber.Forest.d(
+                Timber.d(
                     "✅ TV discover page $page, " +
                             "${response.results.size} results, " +
                             "took ${duration}ms"

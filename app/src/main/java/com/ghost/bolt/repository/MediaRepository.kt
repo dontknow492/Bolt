@@ -32,8 +32,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.InvalidObjectException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -201,18 +203,22 @@ class MediaRepository @Inject constructor(
         mediaSource: MediaSource
     ): Flow<UiMediaDetail?> {
         try {
+
             return mediaDao.getMediaDetailFlow(mediaId, mediaType.name, mediaSource.name)
+                .onStart {
+                    val mediaEntity =
+                        mediaDao.getMediaDetail(mediaId, mediaType.name, mediaSource.name)
+                            ?: throw InvalidObjectException("Invalid argurment error")
+
+                    val shouldFetch = mediaEntity.genres.isEmpty()
+
+                    if (shouldFetch) {
+                        refreshMediaDetail(mediaId, mediaType, mediaSource)
+                    }
+                }
                 .map { detail ->
                     if (detail == null) return@map null
 
-                    // We fetch the metadata links "on demand" whenever the main detail updates.
-                    // Note: Running suspend functions inside a Flow map requires some care,
-                    // usually better to fetch these eagerly or combine flows.
-                    // For simplicity, we can fetch them here if we trust the DB speed,
-                    // OR better yet, expose them as Flows from the DAO and combine them.
-
-                    // A simpler, synchronous approach for the DAO methods would be better here,
-                    // OR we just execute the queries:
                     val castLinks = mediaDao.getCastCrossRefs(mediaId)
                     val recLinks = mediaDao.getRecommendationCrossRefs(mediaId)
                     val simLinks = mediaDao.getSimilarCrossRefs(mediaId)
@@ -227,7 +233,6 @@ class MediaRepository @Inject constructor(
 
         // Ensure DB work happens on IO thread
     }
-
 
 
     @OptIn(ExperimentalPagingApi::class)
@@ -248,22 +253,22 @@ class MediaRepository @Inject constructor(
                 query = filter.query,
                 mediaType = TmdbMediaType.TV
             ),
-            pagingSourceFactory = { mediaDao.advancedSearch(query)}
+            pagingSourceFactory = { mediaDao.advancedSearch(query) }
         ).flow
 
     }
 
 
-
     @OptIn(ExperimentalPagingApi::class)
     fun discoverMedia(filter: DiscoverFilter): Flow<PagingData<MediaEntity>> {
         val query = DiscoverQueryBuilder.build(filter)
+        Timber.d("Discover Query: ${query.sql}, arg: ${query.argCount}")
         return Pager(
             config = PagingConfig(
                 pageSize = 20,
                 enablePlaceholders = false,
                 initialLoadSize = 40,
-                prefetchDistance = 10
+                prefetchDistance = 1
             ),
             remoteMediator = DiscoverRemoteMediator(
                 db = db,
@@ -275,7 +280,6 @@ class MediaRepository @Inject constructor(
             }
         ).flow
     }
-
 
 
 }

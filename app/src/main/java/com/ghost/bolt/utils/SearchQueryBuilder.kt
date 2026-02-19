@@ -2,14 +2,14 @@ package com.ghost.bolt.utils
 
 import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.sqlite.db.SupportSQLiteQuery
-import com.ghost.bolt.enums.LogicMode
 import com.ghost.bolt.enums.SearchFilter
 import java.util.Calendar
 
 object SearchQueryBuilder {
 
     fun build(filter: SearchFilter): SupportSQLiteQuery {
-        val queryBuilder = StringBuilder("SELECT * FROM Media WHERE 1=1 ") // 1=1 makes appending "AND" easier
+        val queryBuilder =
+            StringBuilder("SELECT * FROM Media WHERE 1=1 ") // 1=1 makes appending "AND" easier
         val args = ArrayList<Any>()
 
         // 1. Text Search

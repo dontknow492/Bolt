@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Transaction
+import androidx.room.Upsert
 import com.ghost.bolt.database.entity.CastEntity
 import com.ghost.bolt.database.entity.GenreEntity
 import com.ghost.bolt.database.entity.KeywordEntity
@@ -26,6 +27,10 @@ interface MediaDecompositionDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMedia(media: MediaEntity)
+
+    @Upsert
+    suspend fun upsertMedia(media: MediaEntity)
+
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertGenres(genres: List<GenreEntity>)
@@ -79,7 +84,7 @@ interface MediaDecompositionDao {
     @Transaction
     suspend fun insertDecomposition(decomposition: MediaDecomposition) {
 
-        insertMedia(decomposition.media)
+        upsertMedia(decomposition.media)
 
         insertGenres(decomposition.genres)
         insertGenreCrossRefs(decomposition.genreCrossRefs)

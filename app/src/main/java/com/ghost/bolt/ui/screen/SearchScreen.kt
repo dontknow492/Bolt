@@ -3,13 +3,9 @@ package com.ghost.bolt.ui.screen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -20,7 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.List
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,7 +42,6 @@ import com.ghost.bolt.enums.AppMediaType
 import com.ghost.bolt.enums.SearchFilter
 import com.ghost.bolt.models.MediaCardUiModel
 import com.ghost.bolt.ui.components.card.CoverVariant
-import com.ghost.bolt.ui.components.card.MediaCard
 import com.ghost.bolt.ui.components.card.MediaCardStyle
 import com.ghost.bolt.ui.components.card.MediaEntityCard
 import com.ghost.bolt.ui.viewModel.SearchViewModel
@@ -119,8 +113,8 @@ private fun SearchTopBar(
             expanded = false,
             onExpandedChange = onActiveChange,
             modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             shape = SearchBarDefaults.inputFieldShape,
             colors = colors1,
             tonalElevation = SearchBarDefaults.TonalElevation,

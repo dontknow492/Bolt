@@ -7,7 +7,6 @@ import androidx.paging.cachedIn
 import com.ghost.bolt.database.entity.MediaEntity
 import com.ghost.bolt.enums.AppMediaType
 import com.ghost.bolt.enums.SearchFilter
-import com.ghost.bolt.enums.SortOption
 import com.ghost.bolt.repository.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,7 +15,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map

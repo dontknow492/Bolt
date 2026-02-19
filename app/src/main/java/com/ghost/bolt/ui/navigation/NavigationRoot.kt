@@ -61,7 +61,7 @@ data class DetailMediaKey(
 ) : NavKey
 
 @Serializable
-data class DiscoverMediaKey(val filter: DiscoverFilter): NavKey
+data class DiscoverMediaKey(val filter: DiscoverFilter) : NavKey
 
 
 val navigationBarItem = listOf(
@@ -145,7 +145,7 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
 
     val isBottomBarVisible = remember(backStack.size) {
         val topKey = backStack.lastOrNull()
-        topKey is MovieHomeKey || topKey is TVHomeKey || topKey is SearchKey
+        topKey is MovieHomeKey || topKey is TVHomeKey || topKey is SearchKey || topKey is DiscoverMediaKey
     }
 
     var selected by remember { mutableStateOf<NavKey>(TVHomeKey) }
